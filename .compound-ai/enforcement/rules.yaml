@@ -1,0 +1,45 @@
+# Declarative mirror of enforcement/bin/check-kit.sh — kept in sync by hand.
+# If you add a check to the script, add its row here so the rule list
+# stays readable without reading shell.
+
+rules:
+  - id: doctrine-complete
+    description: All four doctrine files present
+    enforced_by: enforcement/bin/check-kit.sh
+    severity: hard
+
+  - id: capabilities-complete
+    description: All four capability contracts present
+    enforced_by: enforcement/bin/check-kit.sh
+    severity: hard
+
+  - id: no-env-committed
+    description: No .env file tracked in git history's current tree
+    enforced_by: enforcement/bin/check-kit.sh
+    severity: hard
+
+  - id: env-gitignored
+    description: .gitignore excludes .env
+    enforced_by: enforcement/bin/check-kit.sh
+    severity: hard
+
+  - id: no-hardcoded-region-logic
+    description: >
+      Region/supplier branching in app code is a heuristic smell check,
+      not a proof — a human review is still worth it when this fires.
+    enforced_by: enforcement/bin/check-kit.sh
+    severity: advisory
+
+  - id: hooks-executable
+    description: Both Claude Code hook scripts have the execute bit set
+    enforced_by: enforcement/bin/check-kit.sh
+    severity: hard
+
+  - id: workspace-boundary-hard-blocked
+    description: >
+      workspace-guard.sh actually blocks file operations outside
+      WORKSPACE_ROOT. Not covered by check-kit.sh (that would need a live
+      Claude Code session) — verify manually per
+      adoption/INSTALL.md's smoke test.
+    enforced_by: manual
+    severity: hard
