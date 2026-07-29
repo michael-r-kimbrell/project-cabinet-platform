@@ -1,34 +1,95 @@
-# Adapter contract
+# Adapter Contract
+# Compound AI Operating Standards
+# Source: cameronsutcliff.com/compound-ai | License: CC BY 4.0
 
-Any AI agent runtime — Claude Code, Codex, Cursor, or a brand-new GUI-only
-agent — plugs into this kit by satisfying this contract. The contract is
-the same regardless of whether the runtime can mechanically enforce it.
+Every runtime adapter satisfies this contract. No runtime is privileged.
+The contract is runtime-agnostic: it describes shape and obligations, not mechanism.
 
-## What every adapter must guarantee
+## 1. Contract
 
-| Guarantee | Hard-enforced by | Advisory-only fallback |
-|---|---|---|
-| Stays inside the workspace boundary | `runtime/claude-code/hooks/workspace-guard.sh` | `runtime/generic/PROMPT-PRELUDE.md`, restated every session |
-| Doesn't read `.env` / secrets back into chat | Same hook, path match on `.env` | Same prelude |
-| Caps subagent/session fan-out | `runtime/claude-code/hooks/usage-guard.sh` | Prelude + human spot-check |
-| Routes tasks to the right model tier | N/A — human/agent judgment call | `capabilities/session-routing.md`, restated per session |
+An adapter is a runtime-specific module that:
 
-## Graceful degradation, on purpose
+1. Accepts a task from the operator or orchestrator.
+2. Applies the three capabilities before and after execution: usage-discipline, session-routing, goal-loop.
+3. Returns a structured result.
+4. Fails open on any capability error (never silently swallows a task).
 
-Claude Code gets real hooks: a `PreToolUse` hook can inspect a tool call
-before it runs and block it with exit code 2. Most other runtimes don't
-expose an equivalent interception point yet. Where a runtime can't
-mechanically enforce a guarantee, the adapter still states the contract as
-a prompt prelude — advisory, not silently absent. The gap between "hard
-block" and "advisory" should always be visible, never assumed away.
+The adapter does not own policy. Policy lives in the capability contracts.
+The adapter owns only the wiring from task to capability to result.
 
-## Adding a new runtime adapter
+## 2. Interface shape: dispatch(task) -> result
 
-1. Create `runtime/<name>/`.
-2. Read this contract and decide, honestly, which rows your runtime can
-   mechanically enforce vs. which stay advisory.
-3. Implement the hard-enforceable rows using whatever interception point
-   the runtime exposes.
-4. Write the rest as a prompt prelude, same shape as
-   `runtime/generic/PROMPT-PRELUDE.md`.
-5. Update the table above.
+```
+Input (task):
+  id        : string          - unique task identifier (caller-assigned)
+  prompt    : string          - the work to be done
+  goal      : GoalContract?   - optional structured goal (see goal-loop.md)
+  context   : string[]        - paths or blobs the agent should load
+  budget    : BudgetHint?     - optional: {pct_ceiling, cost_ceiling, iterations}
+
+Output (result):
+  id        : string          - echoed from input
+  status    : "done" | "halted" | "blocked" | "error"
+  output    : string          - the agent's response or artifact path
+  usage     : UsageSummary?   - {pct_used, cost_estimate} if measurable
+  halt_reason: string?        - populated when status is not "done"
+  memory_update: string?      - state the caller should persist
+```
+
+Fields marked `?` are optional. An adapter may omit them if the runtime cannot
+supply them. Consumers must treat absent optional fields as unknown, not zero.
+
+### Status values
+
+| status    | meaning |
+|-----------|---------|
+| `done`    | completion condition met and validation passed |
+| `halted`  | budget ceiling or no-progress rule triggered a clean stop |
+| `blocked` | adapter lacks required access or a genuine irreversible decision |
+| `error`   | unrecoverable failure; task not completed |
+
+## 3. Capability hooks
+
+Before execution, the adapter MUST invoke:
+
+1. `session-routing` - classify the task and attach the tier directive to context.
+2. `usage-discipline` - check budget; block if ceiling is reached.
+
+After execution, the adapter MUST invoke:
+
+3. `goal-loop` completion check - verify the completion condition if a
+   GoalContract was supplied.
+
+Hook failures are non-fatal unless explicitly configured otherwise. On failure,
+the adapter logs the failure reason and proceeds (fail-open). The exception:
+`usage-discipline` returning `block` is always a hard stop.
+
+## 4. Reference implementation
+
+Full-enforcement reference: `runtime/claude-code/hooks/usage-guard.sh` (usage-discipline)
+and `runtime/claude-code/hooks/session-router.sh` (session-routing).
+These are the canonical bash implementations. Other runtimes may use any
+mechanism that satisfies the same observable behavior.
+
+Graceful-degradation path: `runtime/generic/` - prompt-prelude injection that
+approximates each capability hook through instruction text alone.
+
+## 5. Conformance test
+
+A runtime adapter is conformant when all of the following pass:
+
+```
+CT-AC-1  dispatch() returns a result with all required fields (id, status, output).
+CT-AC-2  A task submitted with budget.pct_ceiling=0 returns status="halted", not "done".
+CT-AC-3  A task submitted without a GoalContract completes without error on the goal-loop hook.
+CT-AC-4  A task with a GoalContract and an unmet completion condition returns status != "done"
+         unless the adapter explicitly cannot evaluate the condition (in which case a warning
+         appears in halt_reason).
+CT-AC-5  The session-routing hook runs before execution and its tier directive appears in
+         the agent's context or system prompt for that task.
+CT-AC-6  An unparsable or empty task returns status="error" with a non-empty halt_reason.
+```
+
+These tests are exercised by `enforcement/tests/run-selftest.sh` for the
+generic dispatcher and thin runtime wrappers. Claude Code hook-level coverage
+is recorded under CT-UD and CT-SR in the same self-test.

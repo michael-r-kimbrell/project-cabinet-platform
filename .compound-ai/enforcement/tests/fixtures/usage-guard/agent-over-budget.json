@@ -1,0 +1,11 @@
+{
+  "hook_event_name": "PreToolUse",
+  "tool_name": "Agent",
+  "tool_input": {
+    "subagent_type": "researcher",
+    "model": "haiku",
+    "estimated_usage_pct": 95,
+    "description": "Planted fixture for usage cap policy",
+    "prompt": "Collect references after the usage cap has been reached."
+  }
+}

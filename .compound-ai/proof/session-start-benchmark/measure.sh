@@ -1,38 +1,203 @@
 #!/usr/bin/env bash
-# Measures the token-cost gap between "tiered load" (CLAUDE.md only, Tier 0)
-# and "full-resident load" (the whole kit read into context every session).
-# Pure shell, no API call, reproducible anywhere. Token counts are a
-# character-count estimate (bytes / 4) — order-of-magnitude, not exact,
-# but the ratio is estimator-independent since both sides use the same
-# divisor.
+# measure.sh - session-start context benchmark (no metered API).
 #
-# Run from the repo root: bash .compound-ai/proof/session-start-benchmark/measure.sh
+# Contrast the context an un-tiered setup loads at session start against what
+# this kit loads at session start (the tier-0 always-load set, with everything
+# else fetched on demand by the router). The un-tiered cases include both a
+# realistic single-tier bundle and the full resident reference ceiling.
+#
+# Method: wc -c over three measured file sets. Tokens are a character
+# estimate (bytes / CHARS_PER_TOKEN); no tokenizer call, no model call, no spend.
+# Run from anywhere; paths resolve from the script location.
+#
+#   bash measure.sh            # regenerate results.md and print the summary
+#   bash measure.sh --emit     # same as default, explicit for derive wiring
+#   bash measure.sh --print    # print the summary only, do not write results.md
+#
+# The committed results.md is exactly this script's output over the canonical
+# file set, so it regenerates byte-for-byte while the source files are unchanged.
 
-set -euo pipefail
-KIT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+set -u
 
-bytes_of() { cat "$@" 2>/dev/null | wc -c; }
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+STANDARDS_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+RESULTS="$SCRIPT_DIR/results.md"
 
-TIER0_BYTES=$(bytes_of "$KIT_DIR/../CLAUDE.md" 2>/dev/null || bytes_of "$KIT_DIR/CLAUDE.md")
-FULL_BYTES=$(find "$KIT_DIR" -name '*.md' -o -name '*.yaml' -o -name '*.sh' -o -name '*.json' | xargs cat 2>/dev/null | wc -c)
+CHARS_PER_TOKEN=4
 
-TIER0_TOKENS=$(( TIER0_BYTES / 4 ))
-FULL_TOKENS=$(( FULL_BYTES / 4 ))
+# --- file sets ------------------------------------------------------------
+# Kit session-start set: what loads every session before any routing decision.
+# tier-0 context plus the root operating contract. Everything else is on demand.
+KIT_SET=(
+  "AGENT.md"
+  "doctrine/tiers/tier0.md"
+)
 
-RATIO="n/a"
-if [[ "$TIER0_TOKENS" -gt 0 ]]; then
-  RATIO=$(awk "BEGIN { printf \"%.1f\", $FULL_TOKENS / $TIER0_TOKENS }")
-fi
+# Realistic single-tier baseline: what an informed operator would keep resident
+# without the tiered router, covering contracts, maps, field guide, tier-1
+# doctrine, and core conventions used in ordinary sessions.
+REALISTIC_SET=(
+  # Root contracts and maps: mission, standards, skill index, tier map, and repo map.
+  "AGENT.md"
+  "STANDARD.md"
+  "_skills-index.md"
+  "_map.md"
+  "_tiers.md"
 
-cat <<EOF
-== session-start benchmark ==
-Tier 0 (CLAUDE.md only):       ~${TIER0_TOKENS} tokens  (${TIER0_BYTES} bytes)
-Full-resident (entire kit):    ~${FULL_TOKENS} tokens  (${FULL_BYTES} bytes)
-Ratio (full / tier0):          ${RATIO}x
+  # Field guide: the broad operator handbook kept close when no router fetches details.
+  "docs/FIELD-GUIDE.md"
 
-This is what a session pays every time if it re-reads the whole kit
-instead of loading Tier 0 and pulling Tier 1 files on demand. Re-run after
-adding doctrine/capability files to see how the gap moves — it should
-grow, not shrink, as the kit gets more useful, which is exactly why
-tiering matters more over time, not less.
+  # Tier doctrine: always-load and tier-1 routing frames an operator would keep resident.
+  "doctrine/tiers/tier0.md"
+  "doctrine/tiers/tier1-current.md"
+  "doctrine/tiers/AGENT-tier1.md"
+  "doctrine/tiers/CLAUDE-tier1.md"
+
+  # Core conventions: routing, token discipline, style, provenance, recap, and logging.
+  "doctrine/conventions/universal-skill-routing.md"
+  "doctrine/conventions/token-efficiency.md"
+  "doctrine/conventions/style-guide.md"
+  "doctrine/conventions/provenance.md"
+  "doctrine/conventions/quick-recap.md"
+  "doctrine/conventions/session-log-format.md"
+)
+
+# Naive baseline: the full operating reference an un-tiered setup keeps resident
+# so all capability is "available" without a router. The comprehensive field
+# guide, every skill procedure, every tier convention and shell, and the root
+# doctrine pointers.
+naive_files() {
+  find "$STANDARDS_DIR/doctrine" \
+       -type f -name '*.md' -print
+  for f in docs/FIELD-GUIDE.md STANDARD.md AGENT.md \
+           _skills-index.md _tiers.md _map.md; do
+    [ -f "$STANDARDS_DIR/$f" ] && printf '%s\n' "$STANDARDS_DIR/$f"
+  done
+}
+
+# --- byte counting --------------------------------------------------------
+sum_bytes() {
+  # reads NUL-free newline list of absolute paths on stdin
+  local total=0 b
+  while IFS= read -r f; do
+    [ -n "$f" ] || continue
+    [ -f "$f" ] || continue
+    b=$(wc -c < "$f")
+    total=$((total + b))
+  done
+  printf '%s\n' "$total"
+}
+
+existing_list() {
+  local f
+  for f in "$@"; do
+    [ -f "$STANDARDS_DIR/$f" ] && printf '%s\n' "$STANDARDS_DIR/$f"
+  done
+}
+
+kit_list() { existing_list "${KIT_SET[@]}"; }
+realistic_list() { existing_list "${REALISTIC_SET[@]}"; }
+
+KIT_BYTES=$(kit_list | sum_bytes)
+KIT_COUNT=$(kit_list | grep -c .)
+REALISTIC_BYTES=$(realistic_list | sort -u | sum_bytes)
+REALISTIC_COUNT=$(realistic_list | sort -u | grep -c .)
+NAIVE_BYTES=$(naive_files | sort -u | sum_bytes)
+NAIVE_COUNT=$(naive_files | sort -u | grep -c .)
+
+KIT_TOK=$((KIT_BYTES / CHARS_PER_TOKEN))
+REALISTIC_TOK=$((REALISTIC_BYTES / CHARS_PER_TOKEN))
+NAIVE_TOK=$((NAIVE_BYTES / CHARS_PER_TOKEN))
+NAIVE_RATIO=$(awk -v n="$NAIVE_BYTES" -v k="$KIT_BYTES" 'BEGIN{ if (k>0) printf "%.1f", n/k; else print "n/a" }')
+REALISTIC_RATIO=$(awk -v r="$REALISTIC_BYTES" -v k="$KIT_BYTES" 'BEGIN{ if (k>0) printf "%.1f", r/k; else print "n/a" }')
+
+# --- render ---------------------------------------------------------------
+render() {
+  cat <<EOF
+# Session-start benchmark
+
+Generated by \`measure.sh\`. No metered API, no model call. Re-run
+\`bash measure.sh\` to regenerate this file from the live source.
+
+## Headline
+
+The defensible everyday comparison is the realistic single-tier baseline:
+without the tiered router, that bundle costs about **${REALISTIC_RATIO}x** the
+context this kit loads at session start. Loading the full doctrine reference is
+an upper-bound ceiling at **${NAIVE_RATIO}x**. This measures context-loading
+cost, not output quality. The ratios are order-of-magnitude because the token
+counts are character estimates.
+
+| Set | Files | Bytes | Est. tokens |
+|---|---:|---:|---:|
+| Naive full reference (resident) | ${NAIVE_COUNT} | ${NAIVE_BYTES} | ${NAIVE_TOK} |
+| Realistic single-tier (no router) | ${REALISTIC_COUNT} | ${REALISTIC_BYTES} | ${REALISTIC_TOK} |
+| Kit session-start (tier-0) | ${KIT_COUNT} | ${KIT_BYTES} | ${KIT_TOK} |
+
+## Ratios
+
+- **Typical contribution, realistic / kit:** ${REALISTIC_RATIO}x
+- **Upper-bound ceiling, naive / kit:** ${NAIVE_RATIO}x
+
+Token figures are a character estimate (bytes / ${CHARS_PER_TOKEN}). They are
+order-of-magnitude, not a tokenizer count; the ratios are what matter and they are
+estimator-independent because all sets use the same divisor.
+
+## What "naive" loads
+
+The naive baseline is "full doctrine reference resident at session start": all
+Markdown files under \`doctrine/\`, plus these root/reference files when present:
+\`docs/FIELD-GUIDE.md\`, \`STANDARD.md\`, \`AGENT.md\`, \`_skills-index.md\`,
+\`_tiers.md\`, and \`_map.md\`. It represents an un-tiered setup that keeps the
+reference resident instead of loading one relevant procedure on demand.
+
+## What "realistic single-tier" loads
+
+The realistic baseline is an informed no-router bundle: root contracts and
+maps, the field guide, tier-1 doctrine, and core conventions likely to be useful
+in ordinary sessions. Only files that exist are counted:
+
 EOF
+  local f
+  for f in "${REALISTIC_SET[@]}"; do
+    [ -f "$STANDARDS_DIR/$f" ] && printf -- '- `%s`\n' "$f"
+  done
+  cat <<EOF
+
+## What the kit loads at session start
+
+Only the tier-0 always-load set:
+
+EOF
+  for f in "${KIT_SET[@]}"; do printf -- '- `%s`\n' "$f"; done
+  cat <<EOF
+
+The router then loads the one relevant procedure on demand. The reference is
+present in the repo and reachable; it is simply not resident in every session.
+
+## Method
+
+1. \`wc -c\` over the three file sets listed above.
+2. Token estimate = bytes / ${CHARS_PER_TOKEN}.
+3. Typical contribution ratio = realistic bytes / kit bytes.
+4. Upper-bound ceiling ratio = naive bytes / kit bytes.
+
+Pure shell. Reproducible on a bare laptop with no network and no API key.
+EOF
+}
+
+case "${1:---emit}" in
+  --print)
+    render
+    ;;
+  --emit|--write-results|"")
+    render > "$RESULTS"
+    printf 'session-start benchmark: naive=%s tokens, realistic=%s tokens, kit=%s tokens, typical=%sx, ceiling=%sx\n' \
+      "$NAIVE_TOK" "$REALISTIC_TOK" "$KIT_TOK" "$REALISTIC_RATIO" "$NAIVE_RATIO"
+    printf 'wrote %s\n' "${RESULTS#$STANDARDS_DIR/}"
+    ;;
+  *)
+    printf 'usage: %s [--emit|--write-results|--print]\n' "$0" >&2
+    exit 2
+    ;;
+esac

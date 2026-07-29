@@ -1,0 +1,25 @@
+cff-version: 1.2.0
+title: Compound AI Operating Standards
+message: If you use this kit, please cite it as below.
+type: software
+authors:
+  - family-names: Sutcliff
+    given-names: Cameron
+    alias: cameronpsutcliff
+  - family-names: Sutcliff
+    given-names: Joshua
+    alias: joshuadsutcliff
+url: https://cameronsutcliff.com/compound-ai
+repository-code: https://github.com/cameronpsutcliff/compound-ai
+version: 3.0.10
+date-released: "2026-07-03"
+license:
+  - CC-BY-4.0
+  - Apache-2.0
+abstract: >-
+  A co-owned operating kit for capable AI coding agents. It pairs a portable,
+  vendor-neutral doctrine (token economics, durable context, goal and loop
+  contracts, provenance, and memory) with an optional Claude Code enforced
+  runtime that turns the doctrine's advisory conventions into hook-enforced
+  usage and routing controls. The doctrine is portable prose and data; the
+  enforced runtime is Claude Code specific.

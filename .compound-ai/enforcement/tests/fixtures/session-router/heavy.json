@@ -1,0 +1,4 @@
+{
+  "hook_event_name": "UserPromptSubmit",
+  "prompt": "Plan a multi-agent architecture review, compare tradeoffs, and produce the merge strategy."
+}

@@ -1,0 +1,36 @@
+name: Enforce operating kit
+
+"on":
+  push:
+    branches:
+      - "**"
+  pull_request:
+    branches:
+      - "**"
+
+permissions:
+  contents: read
+
+jobs:
+  gates:
+    name: Clean kit gates and self-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Run repository gates
+        run: ./enforcement/bin/check-kit.sh
+
+      - name: Run self-test harness
+        run: ./enforcement/tests/run-selftest.sh
+
+  fresh-clone:
+    name: Fresh clone simulation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Simulate fresh adopter clone
+        run: ./enforcement/bin/simulate-fresh-clone.sh
