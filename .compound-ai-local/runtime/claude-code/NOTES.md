@@ -34,6 +34,39 @@
   scripts here are simple and fast; if you extend them, keep them under a
   second or two or Claude Code will feel sluggish.
 
+## Open items — deferred from the 2026-07-29 session, not yet resolved
+
+Parked deliberately, not forgotten. Nothing here is broken today; all three
+are "we don't actually know" rather than "we know it's wrong."
+
+1. **The kit's pre-commit hooks are not installed.** `.compound-ai/` ships
+   `enforcement/hooks/pre-commit/enforce.sh` and `no-em-dashes.sh`, but
+   `.git/hooks/` contains only the stock `.sample` files. None of the kit's
+   enforcement gates ran on commit `edca3f7`, and none will run on the next
+   one. Decide whether that's intentional (the gates are opt-in) or an
+   incomplete install, then either wire them into `.git/hooks/` or write
+   down that we're skipping them on purpose. Note the kit forbids em-dashes
+   while this very file is full of them, so wiring the hook as-is will fail
+   the repo until that's reconciled.
+
+2. **Two CLAUDE.md files load every session with no defined precedence.**
+   `.compound-ai-local/CLAUDE.md` (the cabinet-ops doctrine: workspace
+   boundary, five core habits, project context) and `.compound-ai/CLAUDE.md`
+   (a short pointer that redirects to `AGENT.md` and a `_tiers.md`
+   inheritance model) both get auto-loaded. They describe different
+   operating contracts. Each kit also carries its own
+   `runtime/claude-code/settings.json`, neither of which is the file
+   actually in effect — the live one is the project's `.claude/settings.json`.
+   Nothing enforces which doctrine wins, so today it's whichever the model
+   weighs more heavily. Pick one as canonical and make the other a pointer
+   before the two drift.
+
+3. **Cross-reference, already recorded in `edca3f7`:** the spawn-ceiling
+   `check`/`count` split assumes PostToolUse does not fire when a PreToolUse
+   hook blocks the call. That assumption was never verified end-to-end. The
+   tell is cheap: if the daily counter ever advances on a delegation you
+   watched get rejected, the assumption is wrong.
+
 ## Other runtimes
 
 Codex, Cursor, and anything else without an equivalent hook mechanism get
