@@ -1,0 +1,706 @@
+<!--
+Compound AI Operating Standards v3.0.10
+Source: cameronsutcliff.com/compound-ai
+License: Apache 2.0 (code) / CC BY 4.0 (docs)
+Shell: course-shell
+-->
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Course Shell | Compound AI Operating Standards</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+<style>
+/* ================================================================
+   COURSE SHELL - sequential gated lessons + quizzes + progress
+   Capabilities: sequential flow, per-lesson progress (localStorage),
+   inline knowledge checks, prerequisite chaining, overall progress
+   bar, "mark complete" buttons, resume-where-you-left-off, theme
+   toggle.
+   ================================================================ */
+
+:root {
+  --bg:#141319;--surface:#1c1b21;--surface-mid:#201f25;--surface-high:#2b2930;
+  --surface-highest:#35343b;
+  --text:#e5e1ea;--text-dim:#cfc2d3;--text-muted:#988d9c;
+  --outline-variant:#4c4451;
+  --primary:#8b9eff;--primary-solid:#5468ff;--primary-dim:rgba(139,158,255,0.10);
+  --secondary:#05F2DB;--tertiary:#ecc06f;--success:#4ade80;--error:#ffb4ab;
+  --gradient:linear-gradient(135deg,#5468ff,#8b9eff);
+  --border:rgba(255,255,255,0.06);--border-strong:rgba(255,255,255,0.12);
+}
+[data-theme="light"] {
+  --bg:#faf9fe;--surface:#ffffff;--surface-mid:#f4f3f8;--surface-high:#eeedf2;
+  --surface-highest:#e8e7ec;
+  --text:#1a1c1f;--text-dim:#44474e;--text-muted:#6e7178;
+  --outline-variant:#c4c6cf;
+  --primary:#5468ff;--primary-solid:#5468ff;--primary-dim:rgba(84,104,255,0.07);
+  --secondary:#224BFF;--success:#30b466;--error:#ba1a1a;
+  --border:rgba(196,198,207,0.18);--border-strong:rgba(84,104,255,0.18);
+}
+
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4,h5,h6,button,nav,label{font-family:'Plus Jakarta Sans',sans-serif}
+code,pre,kbd{font-family:'JetBrains Mono',monospace}
+.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--outline-variant);border-radius:2px}
+::-webkit-scrollbar-thumb:hover{background:var(--primary-solid)}
+::selection{background:rgba(139,158,255,0.25)}
+
+/* Top nav */
+.top-nav{
+  position:fixed;top:0;left:0;right:0;height:56px;z-index:50;
+  display:flex;align-items:center;justify-content:space-between;padding:0 24px;
+  background:rgba(16,15,21,0.80);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+}
+[data-theme="light"] .top-nav{background:rgba(250,249,254,0.75)}
+.top-nav-brand{display:flex;align-items:center;gap:10px}
+.top-nav-icon{width:28px;height:28px;border-radius:6px;background:var(--gradient);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px}
+.top-nav-title{font-size:.875rem;font-weight:800;letter-spacing:-0.01em}
+.top-nav-sub{font-size:.625rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-left:8px}
+.nav-btn{display:flex;align-items:center;gap:4px;padding:5px 12px;background:transparent;border:1px solid var(--border);border-radius:4px;color:var(--text-muted);font-size:.6875rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:all .2s}
+.nav-btn:hover{color:var(--text);border-color:var(--outline-variant)}
+
+/* Overall progress bar (under top nav) */
+.progress-strip{position:fixed;top:56px;left:0;right:0;height:3px;z-index:45;background:var(--surface-high)}
+.progress-fill{height:100%;background:var(--gradient);transition:width 0.5s ease;width:0}
+
+/* Lesson flow bar (sticky) */
+.flow-bar{
+  position:fixed;top:59px;left:0;right:0;z-index:40;
+  background:var(--surface);border-bottom:1px solid var(--border);
+  padding:12px 24px;overflow-x:auto;
+}
+[data-theme="light"] .flow-bar{background:var(--surface-mid)}
+.flow-bar::-webkit-scrollbar{display:none}
+.flow-bar-inner{display:flex;align-items:center;gap:0;max-width:1100px;margin:0 auto}
+.flow-step{
+  display:flex;align-items:center;gap:8px;padding:6px 4px 8px;
+  cursor:pointer;white-space:nowrap;transition:opacity 0.2s;
+  border-bottom:2px solid transparent;flex-shrink:0;position:relative;
+}
+.flow-step.active{border-bottom-color:var(--primary);opacity:1}
+.flow-step.completed{opacity:0.95}
+.flow-step.locked{opacity:0.35;cursor:not-allowed}
+.flow-step:hover:not(.locked){opacity:0.9}
+.flow-step-num{
+  font-size:.625rem;font-weight:800;letter-spacing:.15em;color:var(--primary);
+  width:22px;height:22px;border-radius:50%;background:var(--surface-high);
+  display:inline-flex;align-items:center;justify-content:center;
+}
+.flow-step.completed .flow-step-num{background:var(--success);color:#0e1a14}
+.flow-step.locked .flow-step-num{color:var(--text-muted);background:var(--surface-mid)}
+.flow-step-label{font-size:.75rem;font-weight:700;letter-spacing:.04em;color:var(--text)}
+.flow-step.locked .flow-step-label{color:var(--text-muted)}
+.flow-step-status{
+  font-family:'JetBrains Mono',monospace;font-size:.5625rem;font-weight:700;
+  color:var(--text-muted);background:var(--surface-highest);
+  padding:2px 6px;border-radius:2px;
+}
+.flow-connector{height:1px;flex:1;min-width:16px;background:var(--outline-variant);opacity:0.3;margin:0 10px;margin-bottom:8px}
+
+/* Content */
+.main{padding-top:120px;min-height:100vh}
+.main-inner{max-width:840px;margin:0 auto;padding:32px 32px 120px}
+.lesson{display:none;animation:lessonIn 0.3s ease}
+.lesson.active{display:block}
+@keyframes lessonIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+.lesson-header{margin-bottom:32px}
+.lesson-num{font-size:.6875rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px}
+.lesson-title{font-size:clamp(1.5rem,3vw,2rem);font-weight:800;letter-spacing:-0.02em;line-height:1.15;margin-bottom:10px}
+.lesson-desc{font-size:.9375rem;color:var(--text-dim);line-height:1.75;max-width:640px}
+.gradient-text{background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;padding-bottom:.15em;margin-bottom:-.1em}
+
+/* Lesson progress strip inside body */
+.lesson-progress{
+  display:flex;align-items:center;gap:12px;margin:16px 0 24px;
+  padding:10px 14px;background:var(--surface-mid);border-radius:6px;
+  border:1px solid var(--border);font-size:.8125rem;
+}
+.lesson-progress-bar{
+  flex:1;height:6px;background:var(--surface-highest);border-radius:3px;overflow:hidden;
+}
+.lesson-progress-fill{height:100%;background:var(--gradient);transition:width 0.4s ease;width:0}
+.lesson-progress-label{font-size:.6875rem;color:var(--text-muted);font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.lesson-progress-pct{font-family:'JetBrains Mono',monospace;font-size:.75rem;color:var(--primary);font-weight:700;font-variant-numeric:tabular-nums}
+
+/* Card */
+.card{background:var(--surface);border:1px solid var(--border-strong);border-radius:6px;padding:20px;transition:all .3s;margin-bottom:16px}
+.glass{background:rgba(43,41,46,0.60);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(152,141,156,0.10);border-radius:6px;padding:24px;margin-bottom:16px}
+[data-theme="light"] .glass{background:rgba(244,243,248,0.80);border:1px solid var(--border-strong)}
+
+/* Badge */
+.badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:9999px;font-size:.6875rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.badge-primary{background:var(--primary-dim);color:var(--primary)}
+.badge-success{background:rgba(74,222,128,0.10);color:var(--success)}
+.badge-warning{background:rgba(236,192,111,0.10);color:var(--tertiary)}
+
+.bullet-list{list-style:none;display:flex;flex-direction:column;gap:10px}
+.bullet-list li{display:flex;align-items:flex-start;gap:10px;font-size:.9375rem;color:var(--text-dim);line-height:1.65}
+.bullet-list li .material-symbols-outlined{color:var(--primary);font-size:18px;margin-top:3px;flex-shrink:0}
+
+/* Knowledge check */
+.kcheck{
+  background:rgba(139,158,255,0.04);
+  border:1px solid var(--border-strong);
+  border-radius:8px;
+  padding:24px;
+  margin:24px 0;
+  position:relative;
+}
+.kcheck-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:4px 10px;background:var(--primary-dim);color:var(--primary);
+  border-radius:9999px;font-size:.625rem;font-weight:700;letter-spacing:.08em;
+  text-transform:uppercase;margin-bottom:10px;
+}
+.kcheck-question{font-size:1rem;font-weight:700;margin-bottom:16px;color:var(--text)}
+.kcheck-options{display:flex;flex-direction:column;gap:8px}
+.kcheck-option{
+  display:flex;align-items:center;gap:10px;
+  padding:12px 14px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:6px;
+  font-size:.875rem;
+  color:var(--text-dim);
+  cursor:pointer;
+  transition:all 0.2s;
+  text-align:left;
+}
+.kcheck-option:hover{border-color:var(--outline-variant);background:var(--surface-mid)}
+.kcheck-option.correct{
+  background:rgba(74,222,128,0.08);
+  border-color:var(--success);
+  color:var(--text);
+}
+.kcheck-option.incorrect{
+  background:rgba(255,180,171,0.08);
+  border-color:var(--error);
+  color:var(--text);
+}
+.kcheck-option.disabled{pointer-events:none}
+.kcheck-marker{
+  width:20px;height:20px;border-radius:50%;
+  border:2px solid var(--outline-variant);
+  display:inline-flex;align-items:center;justify-content:center;
+  flex-shrink:0;font-size:12px;color:transparent;
+}
+.kcheck-option.correct .kcheck-marker{background:var(--success);border-color:var(--success);color:#0e1a14}
+.kcheck-option.incorrect .kcheck-marker{background:var(--error);border-color:var(--error);color:#1a0e0e}
+.kcheck-feedback{
+  margin-top:14px;padding:12px 14px;border-radius:6px;
+  font-size:.8125rem;line-height:1.6;display:none;
+}
+.kcheck-feedback.correct{display:block;background:rgba(74,222,128,0.08);color:var(--success);border:1px solid rgba(74,222,128,0.2)}
+.kcheck-feedback.incorrect{display:block;background:rgba(255,180,171,0.08);color:var(--error);border:1px solid rgba(255,180,171,0.2)}
+
+/* Lesson nav (bottom) */
+.lesson-nav{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-top:48px;padding-top:24px;border-top:1px solid var(--border);
+  gap:12px;flex-wrap:wrap;
+}
+.lesson-nav-btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:10px 20px;border-radius:4px;
+  font-size:.8125rem;font-weight:700;cursor:pointer;
+  border:1px solid var(--border);background:transparent;color:var(--text-dim);
+  transition:all .2s;
+}
+.lesson-nav-btn:hover:not(:disabled){border-color:var(--outline-variant);color:var(--text)}
+.lesson-nav-btn:disabled{opacity:0.4;cursor:not-allowed}
+.lesson-nav-btn.primary{background:var(--gradient);color:#fff;border-color:transparent}
+.lesson-nav-btn.primary:hover:not(:disabled){opacity:0.92}
+.lesson-nav-btn.success{background:var(--success);color:#0e1a14;border-color:transparent;font-weight:800}
+
+/* Locked notice */
+.locked-notice{
+  text-align:center;padding:48px 24px;
+  border:1px dashed var(--outline-variant);border-radius:8px;
+  color:var(--text-muted);
+}
+.locked-notice .material-symbols-outlined{font-size:48px;color:var(--text-muted);margin-bottom:12px;display:block}
+
+@media(max-width:640px){
+  .flow-bar{padding:10px 16px}
+  .main-inner{padding:24px 16px 80px}
+  .flow-step-label{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- Top nav -->
+<nav class="top-nav">
+  <div class="top-nav-brand">
+    <div class="top-nav-icon"><span class="material-symbols-outlined" style="font-size:16px;">school</span></div>
+    <span class="top-nav-title">[Course Title]</span>
+    <span class="top-nav-sub" id="overallSub">Lesson 1 of 4</span>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;">
+    <button class="nav-btn" onclick="resetProgress()" title="Reset progress">
+      <span class="material-symbols-outlined" style="font-size:16px;">restart_alt</span>
+    </button>
+    <button class="nav-btn" onclick="toggleTheme()">
+      <span class="material-symbols-outlined" style="font-size:16px;" id="themeIcon">light_mode</span>
+    </button>
+  </div>
+</nav>
+
+<!-- Overall progress bar -->
+<div class="progress-strip"><div class="progress-fill" id="overallProgress"></div></div>
+
+<!-- Flow bar -->
+<div class="flow-bar">
+  <div class="flow-bar-inner" id="flowBar"></div>
+</div>
+
+<main class="main">
+<div class="main-inner">
+
+  <!-- =========== LESSON 1 =========== -->
+  <article class="lesson active" data-lesson="0" data-title="Foundations">
+    <div class="lesson-header">
+      <div class="lesson-num">Lesson 01</div>
+      <h1 class="lesson-title"><span class="gradient-text">Foundations</span></h1>
+      <p class="lesson-desc">[PLACEHOLDER] First lesson description. What will the learner be able to do after they finish? Keep it specific and outcome-focused.</p>
+    </div>
+
+    <div class="lesson-progress">
+      <span class="lesson-progress-label">Lesson progress</span>
+      <div class="lesson-progress-bar"><div class="lesson-progress-fill" data-prog="0"></div></div>
+      <span class="lesson-progress-pct" data-pct="0">0%</span>
+    </div>
+
+    <div class="glass">
+      <h3 style="font-size:.9375rem;font-weight:700;margin-bottom:10px;">What you will learn</h3>
+      <ul class="bullet-list">
+        <li><span class="material-symbols-outlined">check_circle</span>[Learning objective 1]</li>
+        <li><span class="material-symbols-outlined">check_circle</span>[Learning objective 2]</li>
+        <li><span class="material-symbols-outlined">check_circle</span>[Learning objective 3]</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3 style="font-size:.9375rem;font-weight:700;margin-bottom:8px;">Concept</h3>
+      <p style="font-size:.875rem;color:var(--text-dim);line-height:1.7;">[PLACEHOLDER] Walk through the core concept here. Use short paragraphs, concrete examples, and link to upstream/downstream lessons where relevant.</p>
+    </div>
+
+    <!-- Inline knowledge check -->
+    <div class="kcheck" data-quiz="q1-1">
+      <span class="kcheck-badge"><span class="material-symbols-outlined" style="font-size:12px;">quiz</span>Knowledge Check</span>
+      <div class="kcheck-question">[PLACEHOLDER] Quick question about the concept above?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-option" data-correct="false"><span class="kcheck-marker">&times;</span>[Option A]</button>
+        <button class="kcheck-option" data-correct="true"><span class="kcheck-marker">&check;</span>[Option B (correct)]</button>
+        <button class="kcheck-option" data-correct="false"><span class="kcheck-marker">&times;</span>[Option C]</button>
+        <button class="kcheck-option" data-correct="false"><span class="kcheck-marker">&times;</span>[Option D]</button>
+      </div>
+      <div class="kcheck-feedback"></div>
+    </div>
+
+    <div class="lesson-nav">
+      <button class="lesson-nav-btn" disabled><span class="material-symbols-outlined" style="font-size:16px;">arrow_back</span> Previous</button>
+      <button class="lesson-nav-btn success" data-action="complete">Mark Complete <span class="material-symbols-outlined" style="font-size:16px;">task_alt</span></button>
+      <button class="lesson-nav-btn primary" data-action="next">Next Lesson <span class="material-symbols-outlined" style="font-size:16px;">arrow_forward</span></button>
+    </div>
+  </article>
+
+  <!-- =========== LESSON 2 =========== -->
+  <article class="lesson" data-lesson="1" data-title="Patterns">
+    <div class="lesson-header">
+      <div class="lesson-num">Lesson 02</div>
+      <h2 class="lesson-title">Patterns</h2>
+      <p class="lesson-desc">[PLACEHOLDER] Second lesson. Builds on Lesson 01.</p>
+    </div>
+
+    <div class="lesson-progress">
+      <span class="lesson-progress-label">Lesson progress</span>
+      <div class="lesson-progress-bar"><div class="lesson-progress-fill" data-prog="0"></div></div>
+      <span class="lesson-progress-pct" data-pct="0">0%</span>
+    </div>
+
+    <div class="card">
+      <h3 style="font-size:.9375rem;font-weight:700;margin-bottom:8px;">Pattern 1</h3>
+      <p style="font-size:.875rem;color:var(--text-dim);line-height:1.7;">[PLACEHOLDER] Explain the first pattern. Show a small example. Connect it back to the Lesson 01 foundation.</p>
+    </div>
+    <div class="card">
+      <h3 style="font-size:.9375rem;font-weight:700;margin-bottom:8px;">Pattern 2</h3>
+      <p style="font-size:.875rem;color:var(--text-dim);line-height:1.7;">[PLACEHOLDER] Second pattern.</p>
+    </div>
+
+    <div class="kcheck" data-quiz="q2-1">
+      <span class="kcheck-badge"><span class="material-symbols-outlined" style="font-size:12px;">quiz</span>Knowledge Check</span>
+      <div class="kcheck-question">[PLACEHOLDER] Which pattern best fits scenario X?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-option" data-correct="true"><span class="kcheck-marker">&check;</span>Pattern 1</button>
+        <button class="kcheck-option" data-correct="false"><span class="kcheck-marker">&times;</span>Pattern 2</button>
+        <button class="kcheck-option" data-correct="false"><span class="kcheck-marker">&times;</span>Neither</button>
+      </div>
+      <div class="kcheck-feedback"></div>
+    </div>
+
+    <div class="lesson-nav">
+      <button class="lesson-nav-btn" data-action="prev"><span class="material-symbols-outlined" style="font-size:16px;">arrow_back</span> Previous</button>
+      <button class="lesson-nav-btn success" data-action="complete">Mark Complete <span class="material-symbols-outlined" style="font-size:16px;">task_alt</span></button>
+      <button class="lesson-nav-btn primary" data-action="next">Next Lesson <span class="material-symbols-outlined" style="font-size:16px;">arrow_forward</span></button>
+    </div>
+  </article>
+
+  <!-- =========== LESSON 3 =========== -->
+  <article class="lesson" data-lesson="2" data-title="Practice">
+    <div class="lesson-header">
+      <div class="lesson-num">Lesson 03</div>
+      <h2 class="lesson-title">Practice</h2>
+      <p class="lesson-desc">[PLACEHOLDER] Hands-on lesson. Build something.</p>
+    </div>
+
+    <div class="lesson-progress">
+      <span class="lesson-progress-label">Lesson progress</span>
+      <div class="lesson-progress-bar"><div class="lesson-progress-fill" data-prog="0"></div></div>
+      <span class="lesson-progress-pct" data-pct="0">0%</span>
+    </div>
+
+    <div class="glass">
+      <h3 style="font-size:.9375rem;font-weight:700;margin-bottom:10px;">Exercise</h3>
+      <p style="font-size:.875rem;color:var(--text-dim);line-height:1.7;margin-bottom:12px;">[PLACEHOLDER] Describe the exercise. What should the learner produce? What does "done" look like?</p>
+      <ul class="bullet-list">
+        <li><span class="material-symbols-outlined">task_alt</span>[Acceptance criterion 1]</li>
+        <li><span class="material-symbols-outlined">task_alt</span>[Acceptance criterion 2]</li>
+        <li><span class="material-symbols-outlined">task_alt</span>[Acceptance criterion 3]</li>
+      </ul>
+    </div>
+
+    <div class="kcheck" data-quiz="q3-1">
+      <span class="kcheck-badge"><span class="material-symbols-outlined" style="font-size:12px;">quiz</span>Self-Check</span>
+      <div class="kcheck-question">Did your output meet all three acceptance criteria?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-option" data-correct="true"><span class="kcheck-marker">&check;</span>Yes, all three.</button>
+        <button class="kcheck-option" data-correct="false"><span class="kcheck-marker">&times;</span>Two of three. (Go back and finish.)</button>
+        <button class="kcheck-option" data-correct="false"><span class="kcheck-marker">&times;</span>Fewer than two. (Re-read Patterns lesson.)</button>
+      </div>
+      <div class="kcheck-feedback"></div>
+    </div>
+
+    <div class="lesson-nav">
+      <button class="lesson-nav-btn" data-action="prev"><span class="material-symbols-outlined" style="font-size:16px;">arrow_back</span> Previous</button>
+      <button class="lesson-nav-btn success" data-action="complete">Mark Complete <span class="material-symbols-outlined" style="font-size:16px;">task_alt</span></button>
+      <button class="lesson-nav-btn primary" data-action="next">Next Lesson <span class="material-symbols-outlined" style="font-size:16px;">arrow_forward</span></button>
+    </div>
+  </article>
+
+  <!-- =========== LESSON 4 =========== -->
+  <article class="lesson" data-lesson="3" data-title="Wrap Up">
+    <div class="lesson-header">
+      <div class="lesson-num">Lesson 04</div>
+      <h2 class="lesson-title">Wrap Up</h2>
+      <p class="lesson-desc">[PLACEHOLDER] Final lesson. Synthesize what was learned, point to next steps.</p>
+    </div>
+
+    <div class="lesson-progress">
+      <span class="lesson-progress-label">Lesson progress</span>
+      <div class="lesson-progress-bar"><div class="lesson-progress-fill" data-prog="0"></div></div>
+      <span class="lesson-progress-pct" data-pct="0">0%</span>
+    </div>
+
+    <div class="glass">
+      <h3 style="font-size:.9375rem;font-weight:700;margin-bottom:10px;">What you learned</h3>
+      <ul class="bullet-list">
+        <li><span class="material-symbols-outlined" style="color:var(--success);">check_circle</span>[Takeaway 1]</li>
+        <li><span class="material-symbols-outlined" style="color:var(--success);">check_circle</span>[Takeaway 2]</li>
+        <li><span class="material-symbols-outlined" style="color:var(--success);">check_circle</span>[Takeaway 3]</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3 style="font-size:.9375rem;font-weight:700;margin-bottom:8px;">Next steps</h3>
+      <p style="font-size:.875rem;color:var(--text-dim);line-height:1.7;">[PLACEHOLDER] Where should the learner go next? Another course? An exercise repo? A community channel?</p>
+    </div>
+
+    <div class="lesson-nav">
+      <button class="lesson-nav-btn" data-action="prev"><span class="material-symbols-outlined" style="font-size:16px;">arrow_back</span> Previous</button>
+      <button class="lesson-nav-btn success" data-action="complete">Mark Course Complete <span class="material-symbols-outlined" style="font-size:16px;">workspace_premium</span></button>
+      <button class="lesson-nav-btn" disabled>End <span class="material-symbols-outlined" style="font-size:16px;">flag</span></button>
+    </div>
+  </article>
+
+  <!-- Locked notice (rendered when user tries to access locked lesson) -->
+  <div class="lesson" data-lesson="locked">
+    <div class="locked-notice">
+      <span class="material-symbols-outlined">lock</span>
+      <h3 style="font-size:1rem;font-weight:700;margin-bottom:6px;color:var(--text);">Lesson locked</h3>
+      <p style="font-size:.875rem;">Complete the previous lesson before continuing.</p>
+    </div>
+  </div>
+
+</div>
+</main>
+
+<script>
+/* ================================================================
+   COURSE STATE (persisted to localStorage)
+   schema: { current: int, completed: bool[], quizzes: {id: 'correct'|'incorrect'} }
+   ================================================================ */
+var STORAGE_KEY = 'compound-ai-course-shell-v1';
+var lessons = document.querySelectorAll('.lesson[data-lesson]:not([data-lesson="locked"])');
+var totalLessons = lessons.length;
+
+var state = loadState();
+
+function loadState() {
+  try {
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      var parsed = JSON.parse(raw);
+      if (Array.isArray(parsed.completed) && parsed.completed.length === totalLessons) {
+        return parsed;
+      }
+    }
+  } catch (e) {}
+  return {
+    current: 0,
+    completed: new Array(totalLessons).fill(false),
+    quizzes: {}
+  };
+}
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+}
+
+/* ================================================================
+   FLOW BAR RENDER
+   ================================================================ */
+function renderFlow() {
+  var inner = document.getElementById('flowBar');
+  inner.innerHTML = '';
+  lessons.forEach(function(l, i) {
+    var step = document.createElement('div');
+    step.className = 'flow-step';
+    if (i === state.current) step.classList.add('active');
+    if (state.completed[i]) step.classList.add('completed');
+    if (isLocked(i)) step.classList.add('locked');
+
+    var title = l.getAttribute('data-title') || ('Lesson ' + (i + 1));
+    var statusLabel = state.completed[i] ? 'Done' : (isLocked(i) ? 'Locked' : 'Open');
+    step.innerHTML =
+      '<span class="flow-step-num">' + (state.completed[i] ? '✓' : (i + 1)) + '</span>' +
+      '<span class="flow-step-label">' + title + '</span>' +
+      '<span class="flow-step-status">' + statusLabel + '</span>';
+    step.addEventListener('click', function() {
+      if (isLocked(i)) return;
+      goTo(i);
+    });
+    inner.appendChild(step);
+
+    if (i < lessons.length - 1) {
+      var c = document.createElement('div');
+      c.className = 'flow-connector';
+      inner.appendChild(c);
+    }
+  });
+
+  // Top sub label
+  document.getElementById('overallSub').textContent =
+    'Lesson ' + (state.current + 1) + ' of ' + totalLessons;
+}
+
+function isLocked(idx) {
+  if (idx === 0) return false;
+  return !state.completed[idx - 1];
+}
+
+/* ================================================================
+   NAVIGATION
+   ================================================================ */
+function goTo(idx) {
+  if (idx < 0 || idx >= totalLessons) return;
+  if (isLocked(idx)) return;
+  lessons.forEach(function(l) { l.classList.remove('active'); });
+  lessons[idx].classList.add('active');
+  state.current = idx;
+  saveState();
+  renderFlow();
+  renderLessonProgress();
+  updateOverall();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* ================================================================
+   LESSON PROGRESS (per-lesson)
+   Derived: started = current visit, +50 for quiz attempted,
+   +50 for "Mark Complete". Capped at 100.
+   ================================================================ */
+function lessonProgressPct(idx) {
+  var pct = 25; // visited
+  var lesson = lessons[idx];
+  var quizzes = lesson.querySelectorAll('.kcheck[data-quiz]');
+  var passed = 0;
+  quizzes.forEach(function(q) {
+    var id = q.getAttribute('data-quiz');
+    if (state.quizzes[id] === 'correct') passed++;
+  });
+  if (quizzes.length > 0) {
+    pct += Math.round((passed / quizzes.length) * 35);
+  } else {
+    pct += 35;
+  }
+  if (state.completed[idx]) pct = 100;
+  return Math.min(100, pct);
+}
+
+function renderLessonProgress() {
+  lessons.forEach(function(l, i) {
+    var pct = lessonProgressPct(i);
+    var fills = l.querySelectorAll('.lesson-progress-fill');
+    var pcts = l.querySelectorAll('.lesson-progress-pct');
+    fills.forEach(function(f) { f.style.width = pct + '%'; });
+    pcts.forEach(function(p) { p.textContent = pct + '%'; });
+  });
+}
+
+/* ================================================================
+   OVERALL PROGRESS
+   ================================================================ */
+function updateOverall() {
+  var done = state.completed.filter(Boolean).length;
+  var pct = (done / totalLessons) * 100;
+  document.getElementById('overallProgress').style.width = pct + '%';
+}
+
+/* ================================================================
+   COMPLETE / NAV button handlers
+   ================================================================ */
+document.querySelectorAll('[data-action]').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var action = btn.getAttribute('data-action');
+    if (action === 'next') goTo(state.current + 1);
+    else if (action === 'prev') goTo(state.current - 1);
+    else if (action === 'complete') {
+      state.completed[state.current] = true;
+      saveState();
+      renderFlow();
+      renderLessonProgress();
+      updateOverall();
+      btn.textContent = 'Completed ';
+      var icon = document.createElement('span');
+      icon.className = 'material-symbols-outlined';
+      icon.style.fontSize = '16px';
+      icon.textContent = 'check_circle';
+      btn.appendChild(icon);
+      btn.disabled = true;
+    }
+  });
+});
+
+/* ================================================================
+   QUIZZES
+   ================================================================ */
+document.querySelectorAll('.kcheck[data-quiz]').forEach(function(quiz) {
+  var id = quiz.getAttribute('data-quiz');
+  var opts = quiz.querySelectorAll('.kcheck-option');
+  var feedback = quiz.querySelector('.kcheck-feedback');
+
+  // Restore prior state
+  if (state.quizzes[id] === 'correct') {
+    opts.forEach(function(o) {
+      if (o.getAttribute('data-correct') === 'true') o.classList.add('correct');
+      o.classList.add('disabled');
+    });
+    feedback.classList.add('correct');
+    feedback.textContent = 'Correct. Nice work.';
+  }
+
+  opts.forEach(function(opt) {
+    opt.addEventListener('click', function() {
+      if (state.quizzes[id] === 'correct') return;
+      opts.forEach(function(o) { o.classList.remove('correct', 'incorrect'); });
+      var correct = opt.getAttribute('data-correct') === 'true';
+      if (correct) {
+        opt.classList.add('correct');
+        opts.forEach(function(o) { o.classList.add('disabled'); });
+        feedback.className = 'kcheck-feedback correct';
+        feedback.textContent = 'Correct. Nice work.';
+        state.quizzes[id] = 'correct';
+      } else {
+        opt.classList.add('incorrect');
+        feedback.className = 'kcheck-feedback incorrect';
+        feedback.textContent = 'Not quite. Try again.';
+        state.quizzes[id] = 'incorrect';
+      }
+      saveState();
+      renderLessonProgress();
+    });
+  });
+});
+
+/* ================================================================
+   THEME
+   ================================================================ */
+function toggleTheme() {
+  var html = document.documentElement;
+  var next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  html.setAttribute('data-theme', next);
+  document.getElementById('themeIcon').textContent = next === 'dark' ? 'light_mode' : 'dark_mode';
+}
+
+/* ================================================================
+   RESET
+   ================================================================ */
+function resetProgress() {
+  if (!confirm('Reset all course progress? This clears completion, quizzes, and starts you at Lesson 1.')) return;
+  state = { current: 0, completed: new Array(totalLessons).fill(false), quizzes: {} };
+  saveState();
+  // Reload to re-render every quiz cleanly.
+  window.location.reload();
+}
+
+/* ================================================================
+   INIT (resume where left off)
+   ================================================================ */
+(function init() {
+  // Resume to the saved current lesson, but only if it is unlocked.
+  var resumeIdx = state.current;
+  while (resumeIdx > 0 && isLocked(resumeIdx)) resumeIdx--;
+
+  lessons.forEach(function(l) { l.classList.remove('active'); });
+  lessons[resumeIdx].classList.add('active');
+  state.current = resumeIdx;
+
+  // If a lesson is already complete, swap the complete button into a "Completed" state.
+  lessons.forEach(function(l, i) {
+    if (state.completed[i]) {
+      var btn = l.querySelector('[data-action="complete"]');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = 'Completed <span class="material-symbols-outlined" style="font-size:16px;">check_circle</span>';
+      }
+    }
+  });
+
+  renderFlow();
+  renderLessonProgress();
+  updateOverall();
+})();
+
+/* Keyboard nav */
+document.addEventListener('keydown', function(e) {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'BUTTON') return;
+  if (e.key === 'ArrowRight') {
+    if (!isLocked(state.current + 1)) goTo(state.current + 1);
+  }
+  if (e.key === 'ArrowLeft') goTo(state.current - 1);
+  if (e.key === 't' || e.key === 'T') toggleTheme();
+});
+</script>
+
+</body>
+</html>

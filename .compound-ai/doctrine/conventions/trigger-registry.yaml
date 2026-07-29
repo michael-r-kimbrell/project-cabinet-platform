@@ -1,0 +1,175 @@
+version: 1
+kit_version: 3.0.10
+updated: 2026-07-03
+notes: >
+  trigger-indexer demoted to CI (check-registry-coherence.sh); its entries removed.
+  provenance-check merged into release-captain reference; its triggers absorbed by release-captain.
+  Skill-merge (Cameron + Josh): unified `memory` skill (modes capture/compress/preserve/resume/recall)
+  absorbs context-loader and pattern-promoter, which are now retired redirect stubs routing to memory.
+  Unified `delegation` skill (worker roles + cost-tier routing + autonomy ladder) added, generic;
+  the fleet-specific delegation.md is superseded. agent-panel-review gains a phased-review mode.
+  One trigger set per merged skill; the SKILL.md sub-routes by intent.
+  Registry maintenance procedure: doctrine/skills/request-router/reference/registry-maintenance.md.
+entries:
+  - skill: request-router
+    tier: 1
+    pointer: doctrine/skills/request-router/SKILL.md
+    mode: internal
+    triggers: ["route this", "what skill applies", "dispatch this"]
+    notes: Session-start router; reads this registry before answering complex requests.
+  - skill: goal-runner
+    tier: 1
+    pointer: doctrine/skills/goal-runner/SKILL.md
+    mode: auto
+    triggers: ["goal", "completion condition", "keep going until", "finish all", "do not stop until", "drain this", "make this ready", "/goal"]
+    notes: Durable goal loop with validation, slow lanes, and memory closeout.
+  - skill: memory
+    tier: 1
+    pointer: doctrine/skills/memory/SKILL.md
+    mode: auto
+    triggers: ["remember this", "save this", "write it down", "note this", "save the session", "session log", "compress this session", "close out the session", "preserve this", "promote this pattern", "save this lesson", "make this reusable", "this should be a standard", "resume", "orient me", "load context", "what should I read", "start session", "catch me up", "recall", "what do we know about", "what happened with", "search memory", "find past context"]
+    notes: "Unified memory lifecycle. One trigger set; SKILL.md sub-routes to capture/compress/preserve/resume/recall. Absorbs the retired context-loader (resume) and pattern-promoter (preserve)."
+  - skill: token-economist
+    tier: 1
+    pointer: doctrine/skills/token-economist/SKILL.md
+    mode: auto
+    triggers: ["token audit", "optimize context", "reduce cost", "why is this expensive", "cache this"]
+    notes: Doctrine backing usage-guard.sh; the hook is the runtime enforcement path.
+  - skill: engagement-bootstrap
+    tier: 1
+    pointer: doctrine/skills/engagement-bootstrap/SKILL.md
+    mode: auto
+    triggers: ["new project", "bootstrap this", "set up the project"]
+    notes: New projects only. Never use on an existing project; use adoption-captain instead.
+  - skill: quality-gate
+    tier: 1
+    pointer: doctrine/skills/quality-gate/SKILL.md
+    mode: auto
+    triggers: ["quality check", "validate output", "ship check", "is this ready", "so what test", "rendered contract"]
+  - skill: delegation
+    tier: 1
+    pointer: doctrine/skills/delegation/SKILL.md
+    mode: auto
+    triggers: ["delegate", "delegate this", "hand this off", "which agent should", "route this work", "spawn a worker", "dispatch to an agent", "run this in parallel agents", "research worker", "code generator", "test runner", "conductor or worker", "cost tier"]
+    notes: "Unified delegation doctrine, generic. SKILL.md sub-routes to research/generate/test workers plus cost-tier routing and the autonomy ladder. Supersedes the fleet-specific delegation.md. Routes work to an agent; distinct from request-router which routes to a skill."
+  - skill: agent-panel-planning
+    tier: 1
+    pointer: doctrine/skills/agent-panel-planning/SKILL.md
+    mode: offer
+    triggers: ["plan this with the panel", "converge on a plan", "split this work across agents", "who should own what"]
+  - skill: agent-panel-review
+    tier: 1
+    pointer: doctrine/skills/agent-panel-review/SKILL.md
+    mode: offer
+    triggers: ["set up a panel", "convene a panel", "multi-agent review", "second opinion", "panel this", "phased review", "spec-drift review", "review against the spec"]
+    notes: "Two modes: panel-review (sealed independent-pass critique) and phased-review (automated spec-drift harness, reference/phased-review.md). Lite; no sealed-panel anonymity internals."
+  - skill: release-captain
+    tier: 1
+    pointer: doctrine/skills/release-captain/SKILL.md
+    mode: auto
+    triggers: ["ship gate", "release captain", "is this ready to ship", "pre-release check", "verify the release", "run the ship gate", "release verification", "can we ship this", "verify origin", "check provenance", "is this the official version"]
+    notes: Provenance verification (formerly provenance-check) is Step 3 of the ship gate; see reference/provenance-verification.md.
+  - skill: adoption-captain
+    tier: 1
+    pointer: doctrine/skills/adoption-captain/SKILL.md
+    mode: auto
+    triggers: ["adopt this kit", "install into my current repo", "optimize this existing agent", "use these techniques going forward", "do not break my stack", "migrate my agent instructions"]
+  - skill: parallel-lens-synthesis
+    tier: 2
+    pointer: doctrine/skills/parallel-lens-synthesis/SKILL.md
+    mode: auto
+    triggers: ["multiple perspectives", "what would x say", "steelman", "red-team", "debate", "ensemble"]
+  - skill: consequence-simulation
+    tier: 2
+    pointer: doctrine/skills/consequence-simulation/SKILL.md
+    mode: auto
+    triggers: ["what could go wrong", "premortem", "stress test", "simulate outcomes", "second-order effects"]
+  - skill: cross-domain-translation
+    tier: 2
+    pointer: doctrine/skills/cross-domain-translation/SKILL.md
+    mode: auto
+    triggers: ["explain to", "translate for", "rewrite for", "make this accessible", "exec summary"]
+  - skill: convergence-detection
+    tier: 2
+    pointer: doctrine/skills/convergence-detection/SKILL.md
+    mode: auto
+    triggers: ["pattern across", "common thread", "root cause", "what connects these", "why does this keep"]
+  - skill: detached-judgment
+    tier: 2
+    pointer: doctrine/skills/detached-judgment/SKILL.md
+    mode: auto
+    triggers: ["devil's advocate", "base rate", "am I being objective", "weight the evidence", "calibrated"]
+  - skill: simulation-to-action-bridge
+    tier: 2
+    pointer: doctrine/skills/simulation-to-action-bridge/SKILL.md
+    mode: auto
+    triggers: ["what should we do", "make this actionable", "next steps", "who owns", "ooda", "turn into a plan"]
+  - skill: nod-protocol
+    tier: 2
+    pointer: doctrine/skills/nod-protocol/SKILL.md
+    mode: auto
+    triggers: ["play devil's advocate", "argue the opposite", "construct the opposite case", "nod this"]
+  - skill: ultra-think
+    tier: 2
+    pointer: doctrine/skills/ultra-think/SKILL.md
+    mode: auto
+    triggers: ["think deeply", "multi-angle", "ultra think"]
+  - skill: pressure-test
+    tier: 2
+    pointer: doctrine/skills/pressure-test/SKILL.md
+    mode: auto
+    triggers: ["pressure test", "critique this", "rip this apart", "tear this apart"]
+  - skill: code-audit
+    tier: 2
+    pointer: doctrine/skills/code-audit/SKILL.md
+    mode: auto
+    triggers: ["code audit", "dead code", "dependency check", "security review", "test coverage"]
+  - skill: autoresearch
+    tier: 2
+    pointer: doctrine/skills/autoresearch/SKILL.md
+    mode: auto
+    triggers: ["research this", "find sources", "structured research", "investigate"]
+  - skill: skill-creator
+    tier: 2
+    pointer: doctrine/skills/skill-creator/SKILL.md
+    mode: auto
+    triggers: ["build a skill", "create a skill", "new skill for", "extend the kit"]
+  - skill: viz
+    tier: 2
+    pointer: doctrine/skills/viz/SKILL.md
+    mode: auto
+    triggers: ["viz", "what chart", "dashboard design", "chart critique", "data viz"]
+  - skill: stakeholder-mapping
+    tier: 2
+    pointer: doctrine/skills/stakeholder-mapping/SKILL.md
+    mode: auto
+    triggers: ["stakeholder map", "influence interest", "stakeholder analysis"]
+  - skill: loop-engineering
+    tier: 2
+    pointer: doctrine/skills/loop-engineering/SKILL.md
+    mode: auto
+    triggers: ["loop engineering", "build a loop", "recurring agent job", "scheduled agent", "automation that prompts", "loop spec", "goal loop governance"]
+  - skill: trigger-indexer
+    tier: 1
+    pointer: doctrine/skills/trigger-indexer/SKILL.md
+    mode: retired
+    triggers: []
+    notes: "Demoted to CI in v3.0.0. Registry maintenance: doctrine/skills/request-router/reference/registry-maintenance.md. Schema: doctrine/skills/trigger-indexer/reference/registry-schema.md."
+  - skill: provenance-check
+    tier: 1
+    pointer: doctrine/skills/provenance-check/SKILL.md
+    mode: retired
+    triggers: []
+    notes: "Merged into release-captain in v3.0.0. Procedure: doctrine/skills/release-captain/reference/provenance-verification.md. Triggers now route to release-captain."
+  - skill: context-loader
+    tier: 1
+    pointer: doctrine/skills/context-loader/SKILL.md
+    mode: retired
+    triggers: []
+    notes: "Folded into memory (resume mode) in the skill-merge. Procedure: doctrine/skills/memory/reference/resume.md. Triggers now route to memory."
+  - skill: pattern-promoter
+    tier: 1
+    pointer: doctrine/skills/pattern-promoter/SKILL.md
+    mode: retired
+    triggers: []
+    notes: "Folded into memory (preserve mode, ACE promotion format) in the skill-merge. Procedure: doctrine/skills/memory/reference/preserve.md. Triggers now route to memory."

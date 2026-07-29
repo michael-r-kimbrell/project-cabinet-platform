@@ -1,0 +1,16 @@
+# NOTICE
+
+Compound AI Operating Standards v3.0.10
+Enforced Runtime Module (Layer B, optional, Claude Code specific)
+
+Authors: Cameron Sutcliff, Joshua Sutcliff (joshuadsutcliff)
+
+The enforced-runtime hooks (usage-guard, session-router) are vendored under
+Apache-2.0, adapted from Joshua Sutcliff's public claude-config
+(github.com/joshuadsutcliff). The vendored hook code in this module is governed
+by the Apache License, Version 2.0 recorded in the top-level LICENSE, with both
+copyright holders credited there.
+
+Boundary: the Doctrine surface (Layer A) does not import from this module. The
+hooks read Compound AI registry data one way; the doctrine never depends on the
+runtime.

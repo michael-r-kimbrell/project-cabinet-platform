@@ -1,0 +1,18 @@
+# forbidden-terms.txt
+#
+# Flat denylist loaded by check-portability.sh. This is the operative gate
+# input and mirrors the curated, commented source in leak-denylist.txt; keep
+# the two in sync. One term per line, no prose.
+#
+# Shipped scope: GENERIC personal-path patterns ONLY. Literal personal names,
+# private project names, and family framing are NOT listed here -- a shipped
+# denylist of personal terms is itself a leak. The gate also loads
+# leak-denylist.local.txt (gitignored, maintainer-only) on top of this file
+# when present; that local file carries the literal terms.
+#
+# Allowlisted credited identities in attribution-allowlist.txt are stripped
+# before these terms are applied, so co-author names, credited contributors,
+# and the public System B reference are never flagged.
+# Lines beginning with # and blank lines are ignored.
+
+/Users/

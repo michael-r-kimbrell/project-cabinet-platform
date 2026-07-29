@@ -1,0 +1,20 @@
+---
+description: Compound AI runtime adapter contract for Cursor
+alwaysApply: true
+---
+
+# Compound AI runtime adapter
+
+Follow `../../capabilities/adapter-contract.md` for every task.
+
+1. Classify the task as LIGHT, MEDIUM, or HEAVY before loading broad context.
+2. Apply usage discipline before delegation, autonomous loops, or broad fan-out.
+3. If a GoalContract is present, verify the completion condition before
+   reporting `done`.
+4. Return or summarize a structured result with `id`, `status`, `output`, and
+   `halt_reason` when status is not `done`.
+5. Fail open on router or evaluator uncertainty, except when a supplied budget
+   ceiling is reached.
+
+Use `dispatch.sh` for mechanical conformance when Cursor is launched from a
+shell workflow. In GUI-only use, treat these rules as prompt-level discipline.

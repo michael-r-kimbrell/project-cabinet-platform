@@ -1,0 +1,659 @@
+<!--
+Compound AI Operating Standards v3.0.10
+Source: cameronsutcliff.com/compound-ai
+License: Apache 2.0 (code) / CC BY 4.0 (docs)
+Shell: mission-control
+-->
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mission Control | Compound AI Operating Standards</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+<style>
+/* ================================================================
+   MISSION CONTROL - Grid-based ops dashboard
+   Capabilities: responsive grid (auto-fit), live-data slot
+   placeholders (data-metric hooks), RAG status indicators,
+   role-based view filter, per-card SVG sparkline, refresh button,
+   last-updated timestamp, theme toggle, project name placeholder
+   header.
+   ================================================================ */
+
+:root{
+  --bg:#141319;--surface:#1c1b21;--surface-mid:#201f25;--surface-high:#2b2930;
+  --surface-highest:#35343b;
+  --text:#e5e1ea;--text-dim:#cfc2d3;--text-muted:#988d9c;
+  --outline-variant:#4c4451;
+  --primary:#8b9eff;--primary-solid:#5468ff;--primary-dim:rgba(139,158,255,0.10);
+  --secondary:#adc6ff;--tertiary:#ecc06f;
+  --success:#4ade80;--warning:#ecc06f;--error:#ffb4ab;
+  --rag-green:#4ade80;--rag-amber:#ecc06f;--rag-red:#ffb4ab;
+  --gradient:linear-gradient(135deg,#5468ff,#8b9eff);
+  --border:rgba(255,255,255,0.06);--border-strong:rgba(255,255,255,0.12);
+  --glow:0 0 24px rgba(139,158,255,0.08);
+}
+[data-theme="light"]{
+  --bg:#faf9fe;--surface:#ffffff;--surface-mid:#f4f3f8;--surface-high:#eeedf2;
+  --surface-highest:#e8e7ec;
+  --text:#1a1c1f;--text-dim:#44474e;--text-muted:#6e7178;
+  --outline-variant:#c4c6cf;
+  --primary:#5468ff;--primary-solid:#5468ff;--primary-dim:rgba(84,104,255,0.07);
+  --secondary:#4472c4;--success:#30b466;--warning:#e6820a;--error:#ba1a1a;
+  --rag-green:#30b466;--rag-amber:#e6820a;--rag-red:#ba1a1a;
+  --border:rgba(196,198,207,0.18);--border-strong:rgba(84,104,255,0.18);
+  --glow:0 0 24px rgba(84,104,255,0.06);
+}
+
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100vh}
+h1,h2,h3,h4,h5,h6,button,nav,label{font-family:'Plus Jakarta Sans',sans-serif}
+code,pre,kbd{font-family:'JetBrains Mono',monospace}
+.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--outline-variant);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--primary-solid)}
+.tabular{font-variant-numeric:tabular-nums}
+
+/* ===== HEADER ===== */
+.mc-header{
+  position:sticky;top:0;z-index:40;
+  background:rgba(16,15,21,0.85);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+  padding:14px 28px;
+  display:flex;align-items:center;gap:20px;
+  flex-wrap:wrap;
+}
+[data-theme="light"] .mc-header{background:rgba(250,249,254,0.85)}
+.mc-brand{display:flex;align-items:center;gap:12px;flex-shrink:0}
+.mc-brand-icon{
+  width:34px;height:34px;border-radius:8px;background:var(--gradient);
+  display:flex;align-items:center;justify-content:center;color:#fff;
+  box-shadow:0 4px 12px rgba(84,104,255,0.25);
+}
+.mc-brand-text{display:flex;flex-direction:column}
+.mc-brand-name{font-size:.9375rem;font-weight:800;letter-spacing:-0.01em;color:var(--text)}
+.mc-brand-sub{font-size:.625rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-top:1px}
+
+/* status pill */
+.status-pill{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:5px 12px;border-radius:9999px;
+  font-size:.625rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+  background:rgba(74,222,128,0.10);color:var(--rag-green);
+  border:1px solid rgba(74,222,128,0.18);
+}
+.status-pill-dot{width:6px;height:6px;border-radius:50%;background:var(--rag-green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+
+/* role filter */
+.mc-toolbar{display:flex;align-items:center;gap:10px;margin-left:auto;flex-wrap:wrap}
+.role-filter{
+  display:inline-flex;background:var(--surface-high);border-radius:8px;padding:3px;gap:2px;
+}
+.role-filter button{
+  padding:6px 12px;background:transparent;border:none;border-radius:6px;cursor:pointer;
+  font-size:.6875rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--text-muted);transition:all .15s;
+}
+.role-filter button:hover{color:var(--text-dim)}
+.role-filter button.active{background:var(--surface-low);color:var(--primary);box-shadow:0 1px 2px rgba(0,0,0,0.2)}
+
+.icon-btn{
+  display:flex;align-items:center;gap:6px;padding:7px 12px;
+  background:transparent;border:1px solid var(--border);border-radius:6px;
+  color:var(--text-muted);font-size:.6875rem;font-weight:700;letter-spacing:.06em;
+  text-transform:uppercase;cursor:pointer;transition:all .2s;
+}
+.icon-btn:hover{color:var(--text);border-color:var(--outline-variant)}
+.icon-btn.spinning .material-symbols-outlined{animation:spin 0.6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.last-updated{
+  font-family:'JetBrains Mono',monospace;font-size:.6875rem;color:var(--text-muted);
+  letter-spacing:.04em;
+}
+
+/* ===== GRID ===== */
+.mc-main{
+  padding:28px;
+  max-width:1600px;margin:0 auto;
+}
+.section-label{
+  font-size:.625rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--text-muted);margin-bottom:14px;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+  gap:14px;
+  margin-bottom:32px;
+}
+.grid-wide{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(400px,1fr));
+  gap:14px;
+  margin-bottom:32px;
+}
+
+/* ===== CARD ===== */
+.card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:18px 20px;
+  position:relative;
+  transition:border-color 0.2s, transform 0.2s;
+  overflow:hidden;
+}
+.card:hover{border-color:var(--outline-variant);transform:translateY(-1px)}
+.card.rag-green{border-left:3px solid var(--rag-green)}
+.card.rag-amber{border-left:3px solid var(--rag-amber)}
+.card.rag-red{border-left:3px solid var(--rag-red)}
+.card-hidden{display:none}
+
+.card-head{
+  display:flex;justify-content:space-between;align-items:flex-start;
+  margin-bottom:10px;gap:10px;
+}
+.card-label{
+  font-size:.625rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--text-muted);
+}
+.rag-dot{
+  width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px;
+}
+.rag-dot.green{background:var(--rag-green);box-shadow:0 0 8px rgba(74,222,128,0.4)}
+.rag-dot.amber{background:var(--rag-amber);box-shadow:0 0 8px rgba(236,192,111,0.4)}
+.rag-dot.red{background:var(--rag-red);box-shadow:0 0 8px rgba(255,180,171,0.4)}
+
+.card-value{
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:2rem;font-weight:800;letter-spacing:-0.03em;line-height:1;
+  background:var(--gradient);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  font-variant-numeric:tabular-nums;
+  margin-bottom:6px;
+  padding-bottom:0.1em;
+}
+.card-delta{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:.75rem;font-weight:600;font-variant-numeric:tabular-nums;
+}
+.card-delta.up{color:var(--rag-green)}
+.card-delta.down{color:var(--rag-red)}
+.card-delta.flat{color:var(--text-muted)}
+
+/* sparkline (SVG) */
+.sparkline{
+  width:100%;height:42px;margin-top:10px;
+  display:block;
+}
+
+.card-meta{
+  font-size:.75rem;color:var(--text-dim);margin-top:8px;
+  display:flex;justify-content:space-between;align-items:center;gap:8px;
+}
+.card-meta-tag{
+  display:inline-flex;align-items:center;
+  padding:2px 8px;border-radius:9999px;
+  background:var(--surface-high);
+  font-family:'JetBrains Mono',monospace;
+  font-size:.625rem;color:var(--text-muted);letter-spacing:.04em;
+}
+
+/* status table card (wide) */
+.card-table{
+  width:100%;border-collapse:collapse;font-size:.8125rem;
+  margin-top:8px;
+}
+.card-table th{
+  text-align:left;padding:8px 10px;
+  font-size:.625rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--text-muted);
+  border-bottom:1px solid var(--border);
+}
+.card-table td{
+  padding:10px;color:var(--text-dim);border-bottom:1px solid var(--border);
+}
+.card-table tbody tr:last-child td{border-bottom:none}
+.card-table tbody tr:hover{background:rgba(255,255,255,0.02)}
+
+.tag{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:2px 8px;border-radius:9999px;
+  font-size:.625rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+}
+.tag-green{background:rgba(74,222,128,0.10);color:var(--rag-green)}
+.tag-amber{background:rgba(236,192,111,0.10);color:var(--rag-amber)}
+.tag-red{background:rgba(255,180,171,0.10);color:var(--rag-red)}
+.tag-muted{background:var(--surface-high);color:var(--text-muted)}
+
+.gradient-text{
+  background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+
+@media(max-width:640px){
+  .mc-header{padding:14px 16px}
+  .mc-main{padding:18px 16px}
+  .role-filter button{padding:6px 8px;font-size:.625rem}
+}
+</style>
+</head>
+<body>
+
+<!-- =================== HEADER =================== -->
+<header class="mc-header">
+  <div class="mc-brand">
+    <div class="mc-brand-icon"><span class="material-symbols-outlined" style="font-size:18px;">satellite_alt</span></div>
+    <div class="mc-brand-text">
+      <span class="mc-brand-name">[PROJECT NAME]</span>
+      <span class="mc-brand-sub">Mission Control</span>
+    </div>
+  </div>
+
+  <span class="status-pill" id="systemStatus">
+    <span class="status-pill-dot"></span>
+    All Systems Nominal
+  </span>
+
+  <div class="mc-toolbar">
+    <div class="role-filter" id="roleFilter">
+      <button class="active" data-role="all">All</button>
+      <button data-role="exec">Exec</button>
+      <button data-role="ops">Ops</button>
+      <button data-role="eng">Eng</button>
+    </div>
+    <span class="last-updated">Updated <span id="lastUpdated">just now</span></span>
+    <button class="icon-btn" id="refreshBtn" title="Refresh data">
+      <span class="material-symbols-outlined" style="font-size:14px;">refresh</span>
+      Refresh
+    </button>
+    <button class="icon-btn" onclick="toggleTheme()" title="Toggle theme">
+      <span class="material-symbols-outlined" style="font-size:14px;" id="themeIcon">light_mode</span>
+    </button>
+  </div>
+</header>
+
+<main class="mc-main">
+
+  <!-- =================== KPI ROW =================== -->
+  <div class="section-label">Key Indicators</div>
+  <div class="grid">
+
+    <!-- KPI 1 -->
+    <div class="card rag-green" data-roles="all,exec,ops">
+      <div class="card-head">
+        <span class="card-label">[Metric A]</span>
+        <span class="rag-dot green" title="Healthy"></span>
+      </div>
+      <div class="card-value tabular" data-metric="kpi.a">99.4%</div>
+      <div class="card-delta up"><span class="material-symbols-outlined" style="font-size:14px;">arrow_upward</span>+0.3 vs last 7d</div>
+      <svg class="sparkline" data-spark="kpi.a" viewBox="0 0 100 30" preserveAspectRatio="none">
+        <!-- Spark path generated from data-points attribute -->
+        <polyline fill="none" stroke="#4ade80" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"
+                  points=""
+                  data-points="62,58,70,55,68,73,82,78,90,85,95"></polyline>
+      </svg>
+      <div class="card-meta">
+        <span>Target: 99.0%</span>
+        <span class="card-meta-tag">live</span>
+      </div>
+    </div>
+
+    <!-- KPI 2 -->
+    <div class="card rag-amber" data-roles="all,exec,ops">
+      <div class="card-head">
+        <span class="card-label">[Metric B]</span>
+        <span class="rag-dot amber" title="Watch"></span>
+      </div>
+      <div class="card-value tabular" data-metric="kpi.b">72%</div>
+      <div class="card-delta down"><span class="material-symbols-outlined" style="font-size:14px;">arrow_downward</span>-4.1 vs last 7d</div>
+      <svg class="sparkline" data-spark="kpi.b" viewBox="0 0 100 30" preserveAspectRatio="none">
+        <polyline fill="none" stroke="#ecc06f" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"
+                  points=""
+                  data-points="80,82,78,76,72,68,70,65,60,58,55"></polyline>
+      </svg>
+      <div class="card-meta">
+        <span>Threshold: 80%</span>
+        <span class="card-meta-tag">15m</span>
+      </div>
+    </div>
+
+    <!-- KPI 3 -->
+    <div class="card rag-green" data-roles="all,ops,eng">
+      <div class="card-head">
+        <span class="card-label">[Metric C]</span>
+        <span class="rag-dot green" title="Healthy"></span>
+      </div>
+      <div class="card-value tabular" data-metric="kpi.c">187</div>
+      <div class="card-delta up"><span class="material-symbols-outlined" style="font-size:14px;">arrow_upward</span>+12</div>
+      <svg class="sparkline" data-spark="kpi.c" viewBox="0 0 100 30" preserveAspectRatio="none">
+        <polyline fill="none" stroke="#4ade80" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"
+                  points=""
+                  data-points="40,42,48,55,52,60,58,72,68,80,90"></polyline>
+      </svg>
+      <div class="card-meta">
+        <span>Capacity: 240</span>
+        <span class="card-meta-tag">1m</span>
+      </div>
+    </div>
+
+    <!-- KPI 4 -->
+    <div class="card rag-red" data-roles="all,exec,ops">
+      <div class="card-head">
+        <span class="card-label">[Metric D]</span>
+        <span class="rag-dot red" title="Action needed"></span>
+      </div>
+      <div class="card-value tabular" data-metric="kpi.d">3</div>
+      <div class="card-delta down"><span class="material-symbols-outlined" style="font-size:14px;">priority_high</span>2 critical</div>
+      <svg class="sparkline" data-spark="kpi.d" viewBox="0 0 100 30" preserveAspectRatio="none">
+        <polyline fill="none" stroke="#ffb4ab" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"
+                  points=""
+                  data-points="20,18,22,30,28,35,40,55,62,70,75"></polyline>
+      </svg>
+      <div class="card-meta">
+        <span>Open incidents</span>
+        <span class="card-meta-tag">live</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- =================== STATUS TABLE =================== -->
+  <div class="section-label">Workstream Status</div>
+  <div class="grid-wide">
+
+    <div class="card" data-roles="all,exec,ops" style="grid-column:span 2;">
+      <div class="card-head">
+        <span class="card-label">Active Workstreams</span>
+        <span class="card-meta-tag">6 of 8</span>
+      </div>
+      <table class="card-table">
+        <thead>
+          <tr>
+            <th>Stream</th>
+            <th>Owner</th>
+            <th>Status</th>
+            <th>Due</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="color:var(--text);font-weight:600;">[Workstream 1]</td>
+            <td>[Owner]</td>
+            <td><span class="tag tag-green">On Track</span></td>
+            <td class="tabular">May 14</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text);font-weight:600;">[Workstream 2]</td>
+            <td>[Owner]</td>
+            <td><span class="tag tag-amber">At Risk</span></td>
+            <td class="tabular">May 21</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text);font-weight:600;">[Workstream 3]</td>
+            <td>[Owner]</td>
+            <td><span class="tag tag-green">On Track</span></td>
+            <td class="tabular">Jun 02</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text);font-weight:600;">[Workstream 4]</td>
+            <td>[Owner]</td>
+            <td><span class="tag tag-red">Blocked</span></td>
+            <td class="tabular">May 09</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text);font-weight:600;">[Workstream 5]</td>
+            <td>[Owner]</td>
+            <td><span class="tag tag-muted">Planning</span></td>
+            <td class="tabular">Jun 18</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card rag-amber" data-roles="all,ops,eng">
+      <div class="card-head">
+        <span class="card-label">System Health</span>
+        <span class="rag-dot amber"></span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px;">
+        <div>
+          <div class="card-label" style="margin-bottom:4px;">CPU</div>
+          <div style="font-size:1.25rem;font-weight:800;" class="tabular" data-metric="sys.cpu">38%</div>
+        </div>
+        <div>
+          <div class="card-label" style="margin-bottom:4px;">Memory</div>
+          <div style="font-size:1.25rem;font-weight:800;" class="tabular" data-metric="sys.mem">61%</div>
+        </div>
+        <div>
+          <div class="card-label" style="margin-bottom:4px;">Latency p95</div>
+          <div style="font-size:1.25rem;font-weight:800;" class="tabular" data-metric="sys.latency">142ms</div>
+        </div>
+        <div>
+          <div class="card-label" style="margin-bottom:4px;">Error rate</div>
+          <div style="font-size:1.25rem;font-weight:800;color:var(--rag-amber);" class="tabular" data-metric="sys.err">1.2%</div>
+        </div>
+      </div>
+      <svg class="sparkline" data-spark="sys.err" viewBox="0 0 100 30" preserveAspectRatio="none">
+        <polyline fill="none" stroke="#ecc06f" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"
+                  points=""
+                  data-points="10,12,15,11,18,22,28,25,32,30,38"></polyline>
+      </svg>
+    </div>
+
+  </div>
+
+  <!-- =================== ALERTS + EVENTS =================== -->
+  <div class="section-label">Alerts & Recent Events</div>
+  <div class="grid">
+
+    <div class="card rag-red" data-roles="all,exec,ops,eng">
+      <div class="card-head">
+        <span class="card-label">Active Alerts</span>
+        <span class="tag tag-red">2 critical</span>
+      </div>
+      <ul style="list-style:none;display:flex;flex-direction:column;gap:8px;margin-top:6px;font-size:.8125rem;">
+        <li style="padding:8px 10px;background:rgba(255,180,171,0.06);border-radius:4px;color:var(--text-dim);">
+          <strong style="color:var(--rag-red);">[Alert title]</strong><br>
+          <span style="font-size:.75rem;color:var(--text-muted);">[source] · 4m ago</span>
+        </li>
+        <li style="padding:8px 10px;background:rgba(255,180,171,0.06);border-radius:4px;color:var(--text-dim);">
+          <strong style="color:var(--rag-red);">[Alert title]</strong><br>
+          <span style="font-size:.75rem;color:var(--text-muted);">[source] · 22m ago</span>
+        </li>
+        <li style="padding:8px 10px;background:rgba(236,192,111,0.06);border-radius:4px;color:var(--text-dim);">
+          <strong style="color:var(--rag-amber);">[Alert title]</strong><br>
+          <span style="font-size:.75rem;color:var(--text-muted);">[source] · 1h ago</span>
+        </li>
+      </ul>
+    </div>
+
+    <div class="card" data-roles="all,ops,eng">
+      <div class="card-head">
+        <span class="card-label">Recent Events</span>
+        <span class="card-meta-tag">24h</span>
+      </div>
+      <ul style="list-style:none;display:flex;flex-direction:column;gap:6px;margin-top:6px;font-size:.8125rem;">
+        <li style="display:flex;gap:8px;color:var(--text-dim);">
+          <span class="tabular" style="color:var(--text-muted);min-width:48px;font-family:'JetBrains Mono',monospace;">14:32</span>
+          [Event description]
+        </li>
+        <li style="display:flex;gap:8px;color:var(--text-dim);">
+          <span class="tabular" style="color:var(--text-muted);min-width:48px;font-family:'JetBrains Mono',monospace;">13:08</span>
+          [Event description]
+        </li>
+        <li style="display:flex;gap:8px;color:var(--text-dim);">
+          <span class="tabular" style="color:var(--text-muted);min-width:48px;font-family:'JetBrains Mono',monospace;">11:45</span>
+          [Event description]
+        </li>
+        <li style="display:flex;gap:8px;color:var(--text-dim);">
+          <span class="tabular" style="color:var(--text-muted);min-width:48px;font-family:'JetBrains Mono',monospace;">09:12</span>
+          [Event description]
+        </li>
+      </ul>
+    </div>
+
+    <div class="card rag-green" data-roles="all,exec">
+      <div class="card-head">
+        <span class="card-label">Velocity</span>
+        <span class="rag-dot green"></span>
+      </div>
+      <div class="card-value tabular" data-metric="velocity">94%</div>
+      <div class="card-delta up"><span class="material-symbols-outlined" style="font-size:14px;">arrow_upward</span>+6 vs target</div>
+      <svg class="sparkline" data-spark="velocity" viewBox="0 0 100 30" preserveAspectRatio="none">
+        <polyline fill="none" stroke="#4ade80" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"
+                  points=""
+                  data-points="55,60,58,65,70,72,78,82,85,88,94"></polyline>
+      </svg>
+      <div class="card-meta"><span>Target: 88%</span><span class="card-meta-tag">7d</span></div>
+    </div>
+
+    <div class="card" data-roles="all,eng">
+      <div class="card-head">
+        <span class="card-label">Build Queue</span>
+        <span class="card-meta-tag">3 running</span>
+      </div>
+      <div class="card-value tabular gradient-text" data-metric="build.queue" style="-webkit-text-fill-color:initial;background:none;color:var(--text);">9</div>
+      <div class="card-meta" style="margin-top:0;">
+        <span style="color:var(--text-dim);">Avg wait 2m 14s</span>
+        <span class="card-meta-tag">30s</span>
+      </div>
+      <svg class="sparkline" data-spark="build.queue" viewBox="0 0 100 30" preserveAspectRatio="none">
+        <polyline fill="none" stroke="#8b9eff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"
+                  points=""
+                  data-points="30,35,40,32,45,50,55,52,60,58,65"></polyline>
+      </svg>
+    </div>
+
+  </div>
+
+</main>
+
+<script>
+/* ================================================================
+   SPARKLINE RENDER
+   Each <svg class="sparkline"><polyline data-points="..."> renders
+   into normalized 0-100 / 0-30 viewBox.
+   ================================================================ */
+function renderSparklines() {
+  document.querySelectorAll('.sparkline polyline[data-points]').forEach(function(poly) {
+    var raw = poly.getAttribute('data-points') || '';
+    var nums = raw.split(',').map(function(s) { return parseFloat(s.trim()); }).filter(function(n) { return !isNaN(n); });
+    if (nums.length < 2) return;
+    var min = Math.min.apply(null, nums);
+    var max = Math.max.apply(null, nums);
+    var range = max - min || 1;
+    var w = 100, h = 30, pad = 2;
+    var step = (w - pad * 2) / (nums.length - 1);
+    var pts = nums.map(function(v, i) {
+      var x = pad + i * step;
+      var y = pad + (h - pad * 2) * (1 - (v - min) / range);
+      return x.toFixed(1) + ',' + y.toFixed(1);
+    });
+    poly.setAttribute('points', pts.join(' '));
+  });
+}
+
+/* ================================================================
+   LIVE DATA HOOK
+   Each metric exposes a data-metric attribute. To wire live data,
+   call setMetric('kpi.a', '99.5%') from your data layer. Optionally
+   pass an array of points to also update the sparkline.
+
+   Example:
+     setMetric('kpi.a', '99.5%', [62,58,70,55,68,73,82,78,90,85,95]);
+   ================================================================ */
+window.setMetric = function(key, value, points) {
+  document.querySelectorAll('[data-metric="' + key + '"]').forEach(function(el) {
+    el.textContent = value;
+  });
+  if (points && points.length) {
+    document.querySelectorAll('[data-spark="' + key + '"] polyline').forEach(function(poly) {
+      poly.setAttribute('data-points', points.join(','));
+    });
+    renderSparklines();
+  }
+};
+
+/* ================================================================
+   ROLE-BASED VIEW FILTER
+   Each card declares data-roles="all,exec,ops" etc. Clicking a role
+   filter hides cards that don't include that role.
+   ================================================================ */
+var roleButtons = document.querySelectorAll('.role-filter button');
+roleButtons.forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var role = btn.getAttribute('data-role');
+    roleButtons.forEach(function(b) { b.classList.toggle('active', b === btn); });
+    document.querySelectorAll('[data-roles]').forEach(function(card) {
+      var roles = (card.getAttribute('data-roles') || '').split(',').map(function(s) { return s.trim(); });
+      card.classList.toggle('card-hidden', role !== 'all' && roles.indexOf(role) === -1 && roles.indexOf('all') === -1 ? true : (role === 'all' ? false : roles.indexOf(role) === -1));
+    });
+  });
+});
+
+/* ================================================================
+   REFRESH (visual only by default  -  wire your fetch here)
+   ================================================================ */
+var refreshBtn = document.getElementById('refreshBtn');
+refreshBtn.addEventListener('click', function() {
+  if (refreshBtn.classList.contains('spinning')) return;
+  refreshBtn.classList.add('spinning');
+  // Hook: call your data layer here. Demo simulates a 700ms delay.
+  setTimeout(function() {
+    refreshBtn.classList.remove('spinning');
+    setUpdatedNow();
+    // Demo: nudge one of the values to make the refresh visible.
+    var demo = document.querySelector('[data-metric="kpi.c"]');
+    if (demo) {
+      var n = parseInt(demo.textContent, 10) || 0;
+      window.setMetric('kpi.c', String(n + 1));
+    }
+  }, 700);
+});
+
+/* Last-updated timestamp */
+var lastUpdatedTs = Date.now();
+function setUpdatedNow() {
+  lastUpdatedTs = Date.now();
+  document.getElementById('lastUpdated').textContent = 'just now';
+}
+function tickUpdated() {
+  var diff = Math.floor((Date.now() - lastUpdatedTs) / 1000);
+  var label;
+  if (diff < 5) label = 'just now';
+  else if (diff < 60) label = diff + 's ago';
+  else if (diff < 3600) label = Math.floor(diff / 60) + 'm ago';
+  else label = Math.floor(diff / 3600) + 'h ago';
+  document.getElementById('lastUpdated').textContent = label;
+}
+setInterval(tickUpdated, 5000);
+
+/* ================================================================
+   THEME
+   ================================================================ */
+function toggleTheme() {
+  var html = document.documentElement;
+  var next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  html.setAttribute('data-theme', next);
+  document.getElementById('themeIcon').textContent = next === 'dark' ? 'light_mode' : 'dark_mode';
+}
+
+/* ================================================================
+   INIT
+   ================================================================ */
+renderSparklines();
+setUpdatedNow();
+</script>
+
+</body>
+</html>

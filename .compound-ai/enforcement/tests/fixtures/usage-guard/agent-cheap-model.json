@@ -1,0 +1,10 @@
+{
+  "hook_event_name": "PreToolUse",
+  "tool_name": "Agent",
+  "tool_input": {
+    "subagent_type": "researcher",
+    "model": "haiku",
+    "description": "Allowed cheap worker fixture",
+    "prompt": "Collect references for a narrow documentation check."
+  }
+}

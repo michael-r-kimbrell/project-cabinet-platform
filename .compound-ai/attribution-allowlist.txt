@@ -1,0 +1,59 @@
+# attribution-allowlist.txt
+#
+# Credited public identities the leak gate MUST preserve. check-portability.sh
+# removes any occurrence of these strings from a line before applying the
+# denylist, so an allowlisted token is never treated as a leak even if it
+# matches a denied family (denylist-minus-allowlist).
+#
+# Keep entries specific. Do NOT add a bare surname here: that would scrub a
+# denied phrase (for example a private-repo path) down to a false pass.
+# Lines beginning with # and blank lines are ignored by the gate.
+
+# Co-authors (the two credited owners)
+Cameron Sutcliff
+Joshua Sutcliff
+
+# Public GitHub handles
+cameronpsutcliff
+joshuadsutcliff
+
+# Public repositories and canonical site
+github.com/cameronpsutcliff/compound-ai
+cameronpsutcliff/compound-ai
+compound-ai
+cameronsutcliff.com
+
+# Credited case-study system (operator decision: kept named as a real proof
+# point, like the co-author names). Most-specific form first.
+Industry Intelligence Platform
+IIP
+
+# System B public reference runtime (the enforced runtime's public origin).
+# Listed most-specific-first so the full public path is scrubbed before any
+# shorter form, keeping the private-repo denylist entry from false-matching.
+github.com/joshuadsutcliff
+joshuadsutcliff
+
+# Credited contributors, named ONLY as attributions / experts / standards.
+# A name used as a citation, a methodology credit, or an expert reference is
+# allowed; a personal PROFILE or "relative / family" framing is NOT (that is
+# caught by the maintainer-only local denylist). Most-specific form first.
+Michael Sutcliff
+Mike Sutcliff
+Elizabeth Griemann
+Liz Griemann
+Adam Federman
+
+# Public experts and works credited in the citations registry and skills.
+Stephen Few
+Andy Kriebel
+Edward Tufte
+Andrej Karpathy
+Patrick Dyer
+Garry Tan
+New York Times Graphics
+NYT Graphics
+DSPy
+
+# Fleet agent name (a runtime role, not a person): kept as-is.
+Hermes

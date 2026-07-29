@@ -1,0 +1,8 @@
+{
+  "hook_event_name": "PreToolUse",
+  "tool_name": "Agent",
+  "tool_input": {
+    "description": "Planted fixture for missing model policy",
+    "prompt": "Review this change without specifying the required model."
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "hook_event_name": "PreToolUse",
+  "tool_name": "Workflow",
+  "tool_input": {
+    "workflow": "phased-review",
+    "estimated_usage_pct": 95,
+    "prompt": "Launch a capped fan-out review at the block threshold."
+  }
+}

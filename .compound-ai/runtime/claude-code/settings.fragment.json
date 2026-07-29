@@ -1,0 +1,41 @@
+{
+  "_comment": "Hook wiring for the vendored enforced runtime (Apache-2.0). Merge into Claude Code settings.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash runtime/claude-code/hooks/usage-guard.sh refresh",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash runtime/claude-code/hooks/usage-guard.sh inform"
+          },
+          {
+            "type": "command",
+            "command": "bash runtime/claude-code/hooks/session-router.sh"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Agent|Workflow",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash runtime/claude-code/hooks/usage-guard.sh block"
+          }
+        ]
+      }
+    ]
+  }
+}

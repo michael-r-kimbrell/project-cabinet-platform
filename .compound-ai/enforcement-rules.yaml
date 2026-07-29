@@ -1,0 +1,234 @@
+# enforcement-rules.yaml
+# Compound AI Operating Standards v3.0.10
+# Authors: Cameron Sutcliff, Joshua Sutcliff (joshuadsutcliff)
+#
+# Single source of truth for all CI gate rules.
+# Read by: enforcement/bin/check-line-caps.sh, enforcement/bin/check-tier-discipline.sh,
+#           enforcement/bin/check-portability.sh, enforcement/bin/check-counts.sh,
+#           enforcement/bin/check-registry-coherence.sh, enforcement/bin/check-runtime-wiring.sh
+#
+# Rule authority model: this file declares thresholds and exemptions.
+# Gate scripts read these values; thresholds are NOT hard-coded in scripts.
+# Runtime hook policies below are documentation entries only (not executable).
+#
+# D-004 (binding): thresholds must be exposed here (tunable), fail-open,
+# non-draconian defaults, with hard-blocks set at genuinely-protective levels.
+
+# Rules-schema version, independent of the kit release. The kit release version
+# lives in CITATION.cff and the doc headers; this tracks the shape of this file.
+version: "3.0.0"
+
+# ---------------------------------------------------------------------------
+# CI GATE RULES
+# ---------------------------------------------------------------------------
+
+rules:
+
+  - rule_id: line-cap
+    type: structural
+    description: >
+      Pointer files (AGENT.md, any SKILL.md, root contract, and router docs)
+      must not exceed the line cap. Long reference docs are exempt.
+    parameters:
+      max_lines: 100
+      target_lines: 80
+      scope:
+        include:
+          - "AGENT.md"
+          - "**/SKILL.md"
+          - "AGENTS.md"
+          - "routers/**/*.md"
+        exempt:
+          - "docs/FIELD-GUIDE.md"
+          - "docs/**"
+          - "templates/**"
+          - "examples/**"
+          - "reference/**"
+          - "enforcement/tests/fixtures/**"
+    action_on_violation: fail
+    ci_script: enforcement/bin/check-line-caps.sh
+
+  - rule_id: tier-discipline
+    type: structural
+    description: >
+      tier0 content (always-load) must not reference or import from tier-2 or
+      tier-3 paths. Enforcement is a static repo invariant. Runtime minimal-load
+      forcing is advisory (see known-limits.md, it is not mechanically possible
+      to force minimal loading at session start).
+    parameters:
+      forbidden_references:
+        from: "doctrine/tiers/tier0.md"
+        to_patterns:
+          - "doctrine/skills/(parallel-lens-synthesis|consequence-simulation|cross-domain-translation|convergence-detection|detached-judgment|simulation-to-action-bridge|nod-protocol|ultra-think|pressure-test|code-audit|autoresearch|skill-creator|viz|stakeholder-mapping|loop-engineering|slide-shell|scroll-shell|mission-control|course-shell)/**"
+      downgrade_to_warn: false
+    action_on_violation: fail
+    ci_script: enforcement/bin/check-tier-discipline.sh
+
+  - rule_id: portability-leak
+    type: content
+    description: >
+      No shippable file may contain undisclosed personal paths, private vault
+      names, family framing, or other items on the denylist. The shipped
+      denylist carries only generic personal-path patterns; literal personal
+      terms live in the gitignored, maintainer-only local denylist, which the
+      gate loads on top of the shipped patterns when present (so a shipped
+      repo never enumerates the personal terms). Allowlisted credited
+      identities are never treated as leaks even if a pattern matches.
+    parameters:
+      denylist_file: "operating-standards/leak-denylist.txt"
+      local_denylist_file: "operating-standards/leak-denylist.local.txt"
+      allowlist_file: "operating-standards/attribution-allowlist.txt"
+      scope:
+        exclude:
+          - "_reference/**"
+          - "operating-standards/leak-denylist.txt"
+          - "operating-standards/forbidden-terms.txt"
+          - "operating-standards/leak-denylist.local.txt"
+          - "operating-standards/attribution-allowlist.txt"
+          - "enforcement/tests/fixtures/leak-sample.md"
+      python_outside_reference_impl: true
+      script_outside_enforced_runtime_and_hooks: true
+      forbidden_extensions_in_doctrine:
+        - ".py"
+        - ".sh"
+        - ".js"
+      doctrine_paths:
+        - "doctrine/tiers/**"
+        - "doctrine/skills/**"
+        - "doctrine/contracts/**"
+        - "doctrine/conventions/**"
+      enforced_runtime_allowed: "runtime/claude-code/**"
+      hooks_allowed: "enforcement/hooks/**"
+      reference_impl_allowed: "reference-impl/**"
+    action_on_violation: fail
+    ci_script: enforcement/bin/check-portability.sh
+
+  - rule_id: count
+    type: coherence
+    description: >
+      The active skill count (SKILL.md files present) must match the count
+      recorded in _skills-index.md and the trigger-registry.yaml entry count.
+      The count is always derived; it must never be hand-typed.
+    parameters:
+      skill_glob: "**/SKILL.md"
+      index_file: "operating-standards/_skills-index.md"
+      registry_file: "operating-standards/doctrine/conventions/trigger-registry.yaml"
+      tolerance: 0
+    action_on_violation: fail
+    ci_script: enforcement/bin/check-counts.sh
+
+  - rule_id: registry-coherence
+    type: coherence
+    description: >
+      Every entry in trigger-registry.yaml must resolve to a real file at its
+      declared pointer path. Catches phantom directory references such as the
+      tier-1-global/design-system/ class of drift.
+    parameters:
+      registry_file: "operating-standards/doctrine/conventions/trigger-registry.yaml"
+      root: "operating-standards"
+    action_on_violation: fail
+    ci_script: enforcement/bin/check-registry-coherence.sh
+
+  - rule_id: runtime-wiring
+    type: structural
+    description: >
+      settings.fragment.json must declare hooks for all three required events,
+      and all hook paths must resolve to real files. This ensures the enforced
+      runtime is properly wired before any derive step.
+    parameters:
+      fragment_file: "runtime/claude-code/settings.fragment.json"
+      required_events:
+        - event: SessionStart
+          hook_pattern: "usage-guard.sh"
+          mode: refresh
+        - event: UserPromptSubmit
+          hook_pattern: "usage-guard.sh"
+          mode: inform
+        - event: UserPromptSubmit
+          hook_pattern: "session-router.sh"
+        - event: PreToolUse
+          hook_pattern: "usage-guard.sh"
+          mode: block
+          matcher: "Agent|Workflow"
+      verify_paths: true
+    action_on_violation: fail
+    ci_script: enforcement/bin/check-runtime-wiring.sh
+
+# ---------------------------------------------------------------------------
+# RUNTIME HOOK POLICIES (documentation entries, not executable by CI gates)
+# These describe the enforced-runtime behavior; settings.fragment.json wires the scripts.
+# ---------------------------------------------------------------------------
+
+hook_policies:
+
+  - hook_id: usage-guard
+    source: "runtime/claude-code/hooks/usage-guard.sh"
+    vendor_origin: "joshuadsutcliff / claude-config-public"
+    status: vendored_apache_2_0
+    events:
+      - SessionStart: "mode=refresh (async, populates cost cache)"
+      - UserPromptSubmit: "mode=inform (warn at WARN_PCT, never blocks)"
+      - PreToolUse: "mode=block (matcher: Agent|Workflow)"
+    fail_open: true
+    description: >
+      Four modes: pct | block | inform | refresh. Policy 1 denies any Agent
+      subagent that is not sonnet/haiku or a named cheap worker
+      (researcher/code-generator/tester), always, regardless of usage level.
+      Policy 2 blocks Agent|Workflow at the usage-cap proxy block threshold.
+      A broken ccusage, stale cache, or parse failure yields pct=-1 and never
+      blocks (fail-open by design, preserved from vendor implementation).
+    tunable_parameters:
+      USAGE_GUARD_BLOCK_PCT:
+        default: 90
+        description: Hard-block threshold (% of cost cap). Adjust in settings.local.json.
+        minimum_sensible: 75
+      USAGE_GUARD_WARN_PCT:
+        default: 70
+        description: Inform-only threshold. Must be below BLOCK_PCT.
+      USAGE_GUARD_COST_LIMIT:
+        default: 100
+        description: >
+          USD cost-proxy denominator for the active 5h window. Set to your
+          plan's actual window ceiling. Default is a placeholder only.
+      USAGE_GUARD_CACHE_SECS:
+        default: 180
+        description: Cache TTL in seconds. Increase to reduce ccusage invocations.
+      CHEAP_WORKERS:
+        default: "researcher|code-generator|tester"
+        description: Pipe-delimited list of subagent_type values exempt from Policy 1.
+    local_override: "settings.local.json (gitignored)"
+    ccusage_dependency: >
+      npx -y ccusage@latest. Pluggable: degrades to transcript-token estimate
+      when absent. The portable doctrine does not hard-require npm.
+
+  - hook_id: session-router
+    source: "runtime/claude-code/hooks/session-router.sh"
+    vendor_origin: "joshuadsutcliff / claude-config-public"
+    status: vendored_apache_2_0
+    events:
+      - UserPromptSubmit: "classifies LIGHT/MEDIUM/HEAVY, injects routing prior"
+    fail_open: true
+    description: >
+      Reads the submitted prompt, classifies it LIGHT/MEDIUM/HEAVY via cheap
+      regex heuristics, and injects a routing directive into the conductor's
+      context (hookSpecificOutput.additionalContext). Hard limit verified against
+      Claude Code v2.1.179: a hook CANNOT change the main-loop model or effort
+      level. The real model-tier savings come from delegation enforcement by
+      usage-guard. Data source for routing thresholds: trigger-registry.yaml.
+    tunable_parameters:
+      SESSION_ROUTER_OFF:
+        default: "0"
+        description: Set to "1" to disable classification entirely (pass-through).
+      SESSION_ROUTER_SHOW:
+        default: "0"
+        description: Set to "1" to surface a one-line systemMessage per turn.
+    local_override: "settings.local.json (gitignored)"
+
+  - hook_id: phased-review
+    source: "runtime/claude-code/workflows/phased-review.js"
+    vendor_origin: "joshuadsutcliff / claude-config-public"
+    status: folded_local_compat
+    description: >
+      Capped-fan-out reference workflow: waves with usage checks between waves,
+      resumable halt. The exemplar for Layer B delegation economics. Not a CI
+      gate; used at runtime as the reference multi-agent pattern.

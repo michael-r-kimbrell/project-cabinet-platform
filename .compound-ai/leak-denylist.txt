@@ -1,0 +1,22 @@
+# leak-denylist.txt
+#
+# Shipped denylist of GENERIC personal-data PATTERNS the leak gate MUST block
+# from every shippable surface. Referenced by enforcement-rules.yaml
+# (rule_id: portability-leak). check-portability.sh applies these terms only
+# after stripping attribution-allowlist.txt entries from the line, so credited
+# public identities are never blocked (denylist-minus-allowlist).
+#
+# IMPORTANT (negative-space leak fix): this shipped file carries only generic
+# patterns (personal filesystem path prefixes, home-vault paths). It MUST NOT
+# list literal personal names, private project names, or family framing -- a
+# shipped list of "things to hide" is itself a leak. Those literal terms live
+# in leak-denylist.local.txt, a gitignored maintainer-only file that the gate
+# loads on top of this one when present. forbidden-terms.txt mirrors this file
+# as the flat list the gate loads first. Lines beginning with # and blank lines
+# are ignored.
+
+# Personal filesystem path prefixes (also caught structurally by the gate).
+# Literal private workspace/project names are NOT listed here by design; they
+# live in leak-denylist.local.txt (gitignored) and are merged in by the gate
+# and by derive.sh's scrub at build time.
+/Users/

@@ -1,0 +1,1 @@
+{"id":"ct-gl-1","prompt":"finish immediately","goal":{"completion_condition":"contains: done"},"budget":{"iterations":3}}

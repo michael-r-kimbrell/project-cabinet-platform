@@ -1,0 +1,1 @@
+{"id":"ct-ac-unmet","prompt":"write any response","goal":{"completion_condition":"contains: impossible-token"},"budget":{"iterations":1}}

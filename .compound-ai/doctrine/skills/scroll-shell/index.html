@@ -1,0 +1,877 @@
+<!--
+Compound AI Operating Standards v3.0.10
+Source: cameronsutcliff.com/compound-ai
+License: Apache 2.0 (code) / CC BY 4.0 (docs)
+Shell: scroll-shell
+-->
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scroll Shell | Compound AI Operating Standards</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+<style>
+/* ================================================================
+   SCROLL SHELL - long-form, scroll-triggered, narrative layout
+   Capabilities: scroll-triggered animations (IntersectionObserver),
+   interactive sliders with cascading calc, tooltips, tab toggles,
+   CSS bar/line charts, tabular-nums, gradient text, "act" structure.
+   ================================================================ */
+
+:root {
+  --bg:              #141319;
+  --surface:         #1c1b21;
+  --surface-low:     #1c1b21;
+  --surface-mid:     #201f25;
+  --surface-high:    #2b2930;
+  --surface-highest: #35343b;
+  --text:            #e5e1ea;
+  --text-dim:        #cfc2d3;
+  --text-muted:      #988d9c;
+  --outline:         #988d9c;
+  --outline-variant: #4c4451;
+  --primary:         #8b9eff;
+  --primary-solid:   #5468ff;
+  --primary-dim:     rgba(139, 158, 255, 0.10);
+  --secondary:       #05F2DB;
+  --tertiary:        #ecc06f;
+  --error:           #ffb4ab;
+  --success:         #4ade80;
+  --gradient:        linear-gradient(135deg, #8b9eff 0%, #5468ff 100%);
+  --border-ghost:    rgba(255, 255, 255, 0.06);
+  --border-strong:   rgba(255, 255, 255, 0.12);
+  --font-display:    'Plus Jakarta Sans', sans-serif;
+  --font-body:       'Inter', sans-serif;
+  --font-mono:       'JetBrains Mono', monospace;
+}
+
+[data-theme="light"] {
+  --bg: #faf9fe;
+  --surface: #ffffff;
+  --surface-low: #f4f3f8;
+  --surface-mid: #f4f3f8;
+  --surface-high: #eeedf2;
+  --surface-highest: #e8e7ec;
+  --text: #1a1c1f;
+  --text-dim: #44474e;
+  --text-muted: #6e7178;
+  --outline: #6e7178;
+  --outline-variant: #c4c6cf;
+  --primary: #5468ff;
+  --primary-solid: #5468ff;
+  --primary-dim: rgba(84, 104, 255, 0.07);
+  --secondary: #224BFF;
+  --border-ghost: rgba(196, 198, 207, 0.18);
+  --border-strong: rgba(84, 104, 255, 0.18);
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font-body);
+  font-weight: 400;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); }
+button, nav, label { font-family: var(--font-display); }
+code, pre, kbd { font-family: var(--font-mono); }
+.material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--outline-variant); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--primary-solid); }
+::selection { background: rgba(139, 158, 255, 0.25); }
+
+/* Tabular numerics for aligned numeric display */
+.tabular { font-variant-numeric: tabular-nums; }
+
+/* ============== TOP NAV ============== */
+.top-nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 56px;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px 0 264px;
+  background: rgba(16, 15, 21, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border-ghost);
+}
+[data-theme="light"] .top-nav { background: rgba(250, 249, 254, 0.70); }
+.top-nav-title { font-size: 0.9375rem; font-weight: 800; letter-spacing: -0.01em; color: var(--text); }
+.top-nav-actions { display: flex; align-items: center; gap: 8px; }
+.top-nav-btn {
+  display: flex; align-items: center; gap: 4px;
+  padding: 5px 12px;
+  background: transparent;
+  border: 1px solid var(--border-ghost);
+  border-radius: 4px;
+  color: var(--text-muted);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.top-nav-btn:hover { color: var(--text); border-color: var(--outline-variant); }
+
+/* ============== SIDEBAR (TOC) ============== */
+.sidebar {
+  position: fixed;
+  left: 0; top: 0; bottom: 0;
+  width: 264px;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  padding: 28px 16px;
+  background: rgba(12, 11, 16, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-right: 1px solid var(--border-ghost);
+  overflow-y: auto;
+}
+[data-theme="light"] .sidebar { background: rgba(244, 243, 248, 0.95); }
+.sidebar::-webkit-scrollbar { width: 0; }
+.sidebar-brand { padding: 0 8px; margin-bottom: 32px; }
+.sidebar-brand-name { font-size: 1.125rem; font-weight: 800; letter-spacing: -0.02em; color: var(--text); }
+.sidebar-brand-sub { font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-top: 2px; }
+.toc-label { font-size: 0.625rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--primary); padding: 0 8px; margin-bottom: 12px; }
+.toc-list { list-style: none; display: flex; flex-direction: column; gap: 2px; margin-bottom: 32px; }
+.toc-link {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: all 0.2s;
+  border-left: 2px solid transparent;
+  cursor: pointer;
+}
+.toc-link:hover { color: var(--text-dim); background: rgba(255,255,255,0.03); }
+.toc-link.active { color: var(--primary); font-weight: 700; background: var(--primary-dim); border-left-color: var(--primary); }
+.toc-link .material-symbols-outlined { font-size: 18px; opacity: 0.7; }
+.toc-link.active .material-symbols-outlined { opacity: 1; }
+.sidebar-footer { margin-top: auto; padding: 16px 8px 0; border-top: 1px solid var(--border-ghost); font-size: 0.75rem; color: var(--text-muted); line-height: 1.6; }
+
+/* ============== MAIN ============== */
+.main { margin-left: 264px; padding-top: 56px; min-height: 100vh; }
+.main-inner { max-width: 960px; margin: 0 auto; padding: 48px 48px 120px; }
+
+/* ============== ACT structure (progressive disclosure) ============== */
+.act {
+  position: relative;
+  margin-bottom: 120px;
+  scroll-margin-top: 80px;
+}
+.act-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--primary);
+  margin-bottom: 12px;
+}
+.act-title {
+  font-size: clamp(1.75rem, 3vw, 2.5rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  color: var(--text);
+  margin-bottom: 16px;
+}
+.act-lede {
+  font-size: 1.0625rem;
+  color: var(--text-dim);
+  line-height: 1.7;
+  max-width: 640px;
+  margin-bottom: 36px;
+}
+
+/* ============== SCROLL-TRIGGERED ANIMATIONS ============== */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.reveal.in {
+  opacity: 1;
+  transform: translateY(0);
+}
+.reveal-delay-1 { transition-delay: 0.08s; }
+.reveal-delay-2 { transition-delay: 0.16s; }
+.reveal-delay-3 { transition-delay: 0.24s; }
+
+/* ============== COMPONENTS ============== */
+.glass-card {
+  background: rgba(43, 41, 46, 0.60);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(152, 141, 156, 0.10);
+  border-radius: 6px;
+  padding: 24px;
+  transition: all 0.3s ease;
+}
+.glass-card:hover { background: rgba(43, 41, 46, 0.75); }
+[data-theme="light"] .glass-card { background: rgba(244, 243, 248, 0.80); border: 1px solid rgba(196, 198, 207, 0.20); }
+
+.metric-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 32px;
+}
+.metric-value {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  margin-bottom: 4px;
+  background: var(--gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  padding-bottom: 0.15em;
+  margin-bottom: -0.05em;
+  font-variant-numeric: tabular-nums;
+}
+.metric-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.badge-primary { background: var(--primary-dim); color: var(--primary); }
+.badge-success { background: rgba(74,222,128,0.10); color: var(--success); }
+.badge-warning { background: rgba(236,192,111,0.10); color: var(--tertiary); }
+
+.gradient-text {
+  background: var(--gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  padding-bottom: 0.15em;
+}
+
+.bullet-list { list-style: none; display: flex; flex-direction: column; gap: 14px; }
+.bullet-list li {
+  display: flex; align-items: flex-start; gap: 10px;
+  font-size: 0.9375rem;
+  line-height: 1.65;
+  color: var(--text-dim);
+}
+.bullet-list li .material-symbols-outlined { color: var(--primary); font-size: 18px; margin-top: 3px; flex-shrink: 0; }
+
+/* ============== TAB-LIKE VIEW TOGGLE ============== */
+.view-toggle {
+  display: inline-flex;
+  background: var(--surface-high);
+  border-radius: 8px;
+  padding: 4px;
+  margin-bottom: 24px;
+  gap: 2px;
+}
+.view-toggle button {
+  padding: 8px 16px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  transition: all 0.2s;
+}
+.view-toggle button:hover { color: var(--text-dim); }
+.view-toggle button.active {
+  background: var(--surface-low);
+  color: var(--primary);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.view-pane { display: none; }
+.view-pane.active { display: block; animation: paneIn 0.3s ease; }
+@keyframes paneIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ============== INTERACTIVE SLIDER ============== */
+.slider-block {
+  background: var(--surface);
+  border: 1px solid var(--border-ghost);
+  border-radius: 8px;
+  padding: 28px;
+}
+.slider-label-row {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: 12px;
+}
+.slider-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.slider-value {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--primary);
+  font-variant-numeric: tabular-nums;
+}
+input[type="range"].slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  background: var(--surface-high);
+  border-radius: 3px;
+  outline: none;
+  margin: 12px 0;
+}
+input[type="range"].slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--primary-solid);
+  cursor: pointer;
+  box-shadow: 0 0 0 4px rgba(84, 104, 255, 0.15);
+  transition: transform 0.15s;
+}
+input[type="range"].slider::-webkit-slider-thumb:hover { transform: scale(1.1); }
+input[type="range"].slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--primary-solid);
+  border: none;
+  cursor: pointer;
+}
+.slider-output-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border-ghost);
+}
+.slider-output-cell {
+  padding: 12px 14px;
+  background: var(--surface-mid);
+  border-radius: 6px;
+}
+.slider-output-label {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+.slider-output-value {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============== TOOLTIP ============== */
+.tip {
+  border-bottom: 1px dashed var(--primary);
+  cursor: help;
+  position: relative;
+  color: var(--text);
+}
+.tooltip {
+  position: fixed;
+  background: var(--surface-highest);
+  border: 1px solid var(--outline-variant);
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: 0.8125rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+  max-width: 280px;
+  z-index: 200;
+  box-shadow: 0 12px 28px rgba(0,0,0,0.35);
+  opacity: 0;
+  transform: translateY(4px);
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.tooltip.open { opacity: 1; transform: translateY(0); }
+.tooltip h5 {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--primary);
+  margin-bottom: 4px;
+}
+
+/* ============== CSS-only chart (NOTE: swap for Recharts/Chart.js if needed) ============== */
+.chart-cssbars { display: flex; flex-direction: column; gap: 10px; }
+.cssbar-row { display: flex; align-items: center; gap: 12px; font-size: 0.8125rem; }
+.cssbar-label { width: 130px; color: var(--text-dim); text-align: left; }
+.cssbar-track {
+  flex: 1;
+  height: 14px;
+  background: var(--surface-high);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+.cssbar-fill {
+  height: 100%;
+  width: 0;
+  background: var(--gradient);
+  border-radius: 4px;
+  transition: width 1s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.cssbar-value {
+  width: 70px;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Simple SVG line chart sized via container */
+.cssline {
+  width: 100%;
+  height: 220px;
+  background: var(--surface-mid);
+  border-radius: 6px;
+  padding: 16px;
+  border: 1px solid var(--border-ghost);
+}
+
+@media (max-width: 900px) {
+  .sidebar { display: none; }
+  .top-nav { padding-left: 24px; }
+  .main { margin-left: 0; }
+  .main-inner { padding: 32px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ============ SIDEBAR ============ -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <div class="sidebar-brand-name">Scroll Shell</div>
+    <div class="sidebar-brand-sub">v3.0.1</div>
+  </div>
+
+  <div class="toc-label">Acts</div>
+  <ul class="toc-list" id="tocList">
+    <li><a class="toc-link active" href="#act-1" data-section="act-1">
+      <span class="material-symbols-outlined">looks_one</span>
+      Open
+    </a></li>
+    <li><a class="toc-link" href="#act-2" data-section="act-2">
+      <span class="material-symbols-outlined">looks_two</span>
+      Tension
+    </a></li>
+    <li><a class="toc-link" href="#act-3" data-section="act-3">
+      <span class="material-symbols-outlined">looks_3</span>
+      Model
+    </a></li>
+    <li><a class="toc-link" href="#act-4" data-section="act-4">
+      <span class="material-symbols-outlined">looks_4</span>
+      Explore
+    </a></li>
+    <li><a class="toc-link" href="#act-5" data-section="act-5">
+      <span class="material-symbols-outlined">looks_5</span>
+      Close
+    </a></li>
+  </ul>
+
+  <div class="sidebar-footer">
+    [PLACEHOLDER] author / org<br>
+    <span style="color: var(--text-muted);">Compound AI v3.0.1</span>
+  </div>
+</aside>
+
+<!-- ============ TOP NAV ============ -->
+<nav class="top-nav">
+  <span class="top-nav-title">[Project Title]</span>
+  <div class="top-nav-actions">
+    <button class="top-nav-btn" onclick="toggleTheme()">
+      <span class="material-symbols-outlined" style="font-size:16px;" id="themeIcon">light_mode</span>
+    </button>
+  </div>
+</nav>
+
+<!-- ============ MAIN ============ -->
+<main class="main">
+  <div class="main-inner">
+
+    <!-- =========== ACT 1: OPEN =========== -->
+    <section class="act" id="act-1">
+      <div class="reveal">
+        <div class="act-label">Act 1 / Open</div>
+        <h1 class="act-title">
+          <span class="gradient-text">[Headline that<br>frames the question]</span>
+        </h1>
+        <p class="act-lede">
+          Open with the question the reader came for. Use a <span class="tip" data-tip="tip-frame">framing device</span> that makes the stakes clear in one sentence. The rest of the piece earns the click.
+        </p>
+        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+          <span class="badge badge-primary">
+            <span style="width: 5px; height: 5px; border-radius: 50%; background: var(--primary); display: inline-block;"></span>
+            Long-form
+          </span>
+          <span class="badge badge-success">Live data</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========== ACT 2: TENSION =========== -->
+    <section class="act" id="act-2">
+      <div class="reveal">
+        <div class="act-label">Act 2 / Tension</div>
+        <h2 class="act-title">Headline numbers that anchor the story.</h2>
+        <p class="act-lede">
+          Lead with the gradient metrics. The reader should know within five seconds what scale they are reading about.
+        </p>
+      </div>
+
+      <div class="metric-row">
+        <div class="glass-card reveal reveal-delay-1">
+          <div class="metric-label">[Label]</div>
+          <div class="metric-value">$2.4B</div>
+        </div>
+        <div class="glass-card reveal reveal-delay-2">
+          <div class="metric-label">[Label]</div>
+          <div class="metric-value">187</div>
+        </div>
+        <div class="glass-card reveal reveal-delay-3">
+          <div class="metric-label">[Label]</div>
+          <div class="metric-value">94%</div>
+        </div>
+      </div>
+
+      <div class="glass-card reveal" style="margin-top: 8px;">
+        <p style="margin: 0; font-size: 0.9375rem; color: var(--text-dim);">
+          Use this paragraph to explain why those numbers matter. Hover any <span class="tip" data-tip="tip-tabular">tabular figure</span> for a glossary tooltip.
+        </p>
+      </div>
+    </section>
+
+    <!-- =========== ACT 3: MODEL (interactive slider) =========== -->
+    <section class="act" id="act-3">
+      <div class="reveal">
+        <div class="act-label">Act 3 / Model</div>
+        <h2 class="act-title">Drag the slider to explore the math.</h2>
+        <p class="act-lede">
+          Real-time calculations cascade from a single input. The reader becomes an analyst, not just a consumer.
+        </p>
+      </div>
+
+      <div class="slider-block reveal">
+        <div class="slider-label-row">
+          <div class="slider-label">[Input variable]</div>
+          <div class="slider-value tabular"><span id="slider-display">100</span> units</div>
+        </div>
+        <input type="range" class="slider" id="mainSlider" min="0" max="500" value="100" step="5">
+        <div style="display: flex; justify-content: space-between; font-size: 0.6875rem; color: var(--text-muted); font-family: var(--font-mono);">
+          <span>0</span>
+          <span>500</span>
+        </div>
+
+        <div class="slider-output-grid">
+          <div class="slider-output-cell">
+            <div class="slider-output-label">Output A (x 2.4)</div>
+            <div class="slider-output-value tabular" id="outA">240</div>
+          </div>
+          <div class="slider-output-cell">
+            <div class="slider-output-label">Output B (% of 500)</div>
+            <div class="slider-output-value tabular" id="outB">20%</div>
+          </div>
+          <div class="slider-output-cell">
+            <div class="slider-output-label">Output C (sq.)</div>
+            <div class="slider-output-value tabular" id="outC">10,000</div>
+          </div>
+          <div class="slider-output-cell">
+            <div class="slider-output-label">Output D ($M)</div>
+            <div class="slider-output-value tabular" id="outD">$1.2M</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========== ACT 4: EXPLORE (tabs + charts) =========== -->
+    <section class="act" id="act-4">
+      <div class="reveal">
+        <div class="act-label">Act 4 / Explore</div>
+        <h2 class="act-title">Switch the lens.</h2>
+        <p class="act-lede">
+          Use tabs to let the reader pivot between views without leaving the section.
+        </p>
+      </div>
+
+      <div class="reveal">
+        <div class="view-toggle" id="exploreToggle">
+          <button class="active" data-view="bars">Bars</button>
+          <button data-view="line">Line</button>
+          <button data-view="list">List</button>
+        </div>
+
+        <div class="view-pane active" data-pane="bars">
+          <!-- CSS-only bar chart. Swap for Recharts/Chart.js when you need axes, ticks, or interactive tooltips on data points. -->
+          <div class="chart-cssbars" data-chart>
+            <div class="cssbar-row" data-value="78">
+              <div class="cssbar-label">[Series A]</div>
+              <div class="cssbar-track"><div class="cssbar-fill"></div></div>
+              <div class="cssbar-value">78%</div>
+            </div>
+            <div class="cssbar-row" data-value="94">
+              <div class="cssbar-label">[Series B]</div>
+              <div class="cssbar-track"><div class="cssbar-fill"></div></div>
+              <div class="cssbar-value">94%</div>
+            </div>
+            <div class="cssbar-row" data-value="62">
+              <div class="cssbar-label">[Series C]</div>
+              <div class="cssbar-track"><div class="cssbar-fill"></div></div>
+              <div class="cssbar-value">62%</div>
+            </div>
+            <div class="cssbar-row" data-value="41">
+              <div class="cssbar-label">[Series D]</div>
+              <div class="cssbar-track"><div class="cssbar-fill"></div></div>
+              <div class="cssbar-value">41%</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="view-pane" data-pane="line">
+          <!-- Simple inline SVG line chart. Swap for Recharts/Chart.js when you need real axes or interactivity. -->
+          <div class="cssline">
+            <svg viewBox="0 0 600 180" preserveAspectRatio="none" style="width:100%;height:100%;">
+              <defs>
+                <linearGradient id="lineFill" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stop-color="#5468ff" stop-opacity="0.35"/>
+                  <stop offset="100%" stop-color="#5468ff" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <path d="M 0 140 L 75 110 L 150 125 L 225 80 L 300 95 L 375 60 L 450 45 L 525 70 L 600 30 L 600 180 L 0 180 Z" fill="url(#lineFill)"/>
+              <path d="M 0 140 L 75 110 L 150 125 L 225 80 L 300 95 L 375 60 L 450 45 L 525 70 L 600 30" fill="none" stroke="#8b9eff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </div>
+
+        <div class="view-pane" data-pane="list">
+          <ul class="bullet-list">
+            <li><span class="material-symbols-outlined">arrow_circle_right</span>List item one with a <span class="tip" data-tip="tip-frame">key term</span> highlighted.</li>
+            <li><span class="material-symbols-outlined">arrow_circle_right</span>List item two with a longer explanation that wraps across multiple lines.</li>
+            <li><span class="material-symbols-outlined">arrow_circle_right</span>List item three.</li>
+            <li><span class="material-symbols-outlined">arrow_circle_right</span>List item four.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========== ACT 5: CLOSE =========== -->
+    <section class="act" id="act-5">
+      <div class="reveal">
+        <div class="act-label">Act 5 / Close</div>
+        <h2 class="act-title">
+          The takeaway in one <span class="gradient-text">clean sentence.</span>
+        </h2>
+        <p class="act-lede">
+          Land the close. What should the reader do, believe, or remember tomorrow?
+        </p>
+      </div>
+
+      <div class="glass-card reveal">
+        <h3 style="font-size: 1.0625rem; margin-bottom: 12px;">Key takeaways</h3>
+        <ul class="bullet-list">
+          <li><span class="material-symbols-outlined">check_circle</span>[Takeaway 1]</li>
+          <li><span class="material-symbols-outlined">check_circle</span>[Takeaway 2]</li>
+          <li><span class="material-symbols-outlined">check_circle</span>[Takeaway 3]</li>
+        </ul>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<!-- Tooltip content registry (rendered by JS into a floating element) -->
+<div hidden id="tipRegistry">
+  <div data-id="tip-frame"><strong>Framing device</strong><br>A single sentence that names the stakes before the reader has to dig.</div>
+  <div data-id="tip-tabular"><strong>Tabular figure</strong><br>Aligned with <code>font-variant-numeric: tabular-nums</code> so digits stack cleanly across rows.</div>
+</div>
+
+<div class="tooltip" id="tooltip" role="tooltip"></div>
+
+<script>
+/* ============== Scroll-spy TOC ============== */
+var sections = document.querySelectorAll('.act');
+var tocLinks = document.querySelectorAll('.toc-link');
+
+var spy = new IntersectionObserver(function(entries) {
+  entries.forEach(function(entry) {
+    if (entry.isIntersecting) {
+      var id = entry.target.id;
+      tocLinks.forEach(function(link) {
+        link.classList.remove('active');
+        if (link.getAttribute('data-section') === id) link.classList.add('active');
+      });
+    }
+  });
+}, { rootMargin: '-30% 0px -55% 0px' });
+sections.forEach(function(s) { spy.observe(s); });
+
+tocLinks.forEach(function(link) {
+  link.addEventListener('click', function(e) {
+    e.preventDefault();
+    var target = document.querySelector(link.getAttribute('href'));
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+});
+
+/* ============== Reveal on scroll ============== */
+var revealObserver = new IntersectionObserver(function(entries) {
+  entries.forEach(function(entry) {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('in');
+      revealObserver.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.15 });
+document.querySelectorAll('.reveal').forEach(function(el) { revealObserver.observe(el); });
+
+/* ============== Chart bar fills (IO triggered) ============== */
+var chartObserver = new IntersectionObserver(function(entries) {
+  entries.forEach(function(entry) {
+    if (entry.isIntersecting) {
+      var rows = entry.target.querySelectorAll('.cssbar-row');
+      rows.forEach(function(row) {
+        var v = parseFloat(row.getAttribute('data-value')) || 0;
+        row.querySelector('.cssbar-fill').style.width = v + '%';
+      });
+      chartObserver.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.3 });
+document.querySelectorAll('[data-chart]').forEach(function(el) { chartObserver.observe(el); });
+
+/* ============== Interactive slider ============== */
+var slider = document.getElementById('mainSlider');
+var sliderDisplay = document.getElementById('slider-display');
+var outA = document.getElementById('outA');
+var outB = document.getElementById('outB');
+var outC = document.getElementById('outC');
+var outD = document.getElementById('outD');
+
+function fmt(n) { return n.toLocaleString(); }
+function recalc() {
+  var v = parseFloat(slider.value);
+  sliderDisplay.textContent = fmt(v);
+  outA.textContent = fmt(Math.round(v * 2.4));
+  outB.textContent = (v / 500 * 100).toFixed(1) + '%';
+  outC.textContent = fmt(v * v);
+  outD.textContent = '$' + (v * 0.012).toFixed(2) + 'M';
+}
+slider.addEventListener('input', recalc);
+recalc();
+
+/* ============== Tab/view toggle ============== */
+document.querySelectorAll('.view-toggle').forEach(function(toggle) {
+  var buttons = toggle.querySelectorAll('button');
+  buttons.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var view = btn.getAttribute('data-view');
+      buttons.forEach(function(b) { b.classList.toggle('active', b === btn); });
+      var parent = toggle.parentElement;
+      parent.querySelectorAll('.view-pane').forEach(function(p) {
+        p.classList.toggle('active', p.getAttribute('data-pane') === view);
+      });
+    });
+  });
+});
+
+/* ============== Tooltip system ============== */
+(function() {
+  var tooltip = document.getElementById('tooltip');
+  var registry = {};
+  document.querySelectorAll('#tipRegistry > [data-id]').forEach(function(el) {
+    registry[el.getAttribute('data-id')] = el.innerHTML;
+  });
+
+  function position(el) {
+    var rect = el.getBoundingClientRect();
+    var tw = tooltip.offsetWidth;
+    var th = tooltip.offsetHeight;
+    var left = rect.left + (rect.width / 2) - (tw / 2);
+    var top = rect.top - th - 10;
+    if (top < 12) top = rect.bottom + 10;
+    if (left < 12) left = 12;
+    if (left + tw > window.innerWidth - 12) left = window.innerWidth - tw - 12;
+    tooltip.style.left = left + 'px';
+    tooltip.style.top = top + 'px';
+  }
+  function show(el) {
+    var id = el.getAttribute('data-tip');
+    if (!registry[id]) return;
+    tooltip.innerHTML = registry[id];
+    tooltip.classList.add('open');
+    position(el);
+  }
+  function hide() { tooltip.classList.remove('open'); }
+
+  document.querySelectorAll('.tip').forEach(function(el) {
+    el.addEventListener('mouseenter', function() { show(el); });
+    el.addEventListener('mouseleave', hide);
+    el.addEventListener('focus', function() { show(el); });
+    el.addEventListener('blur', hide);
+    el.addEventListener('touchstart', function(e) {
+      e.preventDefault();
+      if (tooltip.classList.contains('open')) hide();
+      else show(el);
+    }, { passive: false });
+    el.setAttribute('tabindex', '0');
+  });
+  window.addEventListener('scroll', hide, { passive: true });
+})();
+
+/* ============== Theme toggle ============== */
+function toggleTheme() {
+  var html = document.documentElement;
+  var next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  html.setAttribute('data-theme', next);
+  document.getElementById('themeIcon').textContent = next === 'dark' ? 'light_mode' : 'dark_mode';
+}
+</script>
+
+</body>
+</html>
