@@ -1,0 +1,78 @@
+name: CI
+
+"on":
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  workspace-guard:
+    name: Workspace guard (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      # The suite simulates Git Bash's C: mount at /c to exercise the
+      # Windows path normalization. A Linux runner cannot create /c as a
+      # normal user, and the suite skips those cases rather than failing,
+      # so make the directory writable and keep the coverage.
+      - name: Make /c writable so the Windows path cases run
+        if: runner.os == 'Linux'
+        run: sudo mkdir -p /c && sudo chown "$(id -u):$(id -g)" /c
+
+      - name: Guard self-test
+        run: bash .compound-ai-local/enforcement/tests/test-workspace-guard.sh
+
+  gates:
+    name: Doctrine and kit gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Project doctrine gate
+        run: bash .compound-ai-local/enforcement/bin/check-kit.sh
+
+      - name: Vendored kit integrity gate
+        run: bash .compound-ai/enforcement/bin/check-kit.sh
+
+      - name: Shell syntax
+        run: |
+          status=0
+          while IFS= read -r script; do
+            bash -n "$script" || { echo "syntax error: $script"; status=1; }
+          done < <(git ls-files '*.sh')
+          exit "$status"
+
+  docs:
+    name: Mermaid charts render
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install checker dependencies
+        run: npm install --prefix tools/mermaid-check --no-audit --no-fund
+
+      - name: Gate self-test
+        run: bash tools/mermaid-check/test-check-mermaid.sh
+
+      - name: Every chart in docs/ renders
+        run: node tools/mermaid-check/check-mermaid.mjs

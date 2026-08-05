@@ -8,8 +8,20 @@
    `.claude/settings.json` (project-level, so it applies to everyone who
    opens this repo — commit it).
 3. Make the hook scripts executable: `chmod +x .compound-ai/runtime/claude-code/hooks/*.sh`
-4. Set `WORKSPACE_ROOT` in your shell environment to the real path, e.g.
-   `C:\Users\<you>\workspace` (or its WSL/git-bash equivalent).
+4. Optionally set `WORKSPACE_ROOT` to the real path, e.g.
+   `C:\Users\<you>\workspace` (or its WSL/git-bash equivalent). The guard
+   resolves its boundary at run time, in this order:
+   `WORKSPACE_ROOT` if that path exists on the current machine, then
+   `CLAUDE_PROJECT_DIR` (Claude Code sets it for every hook), then the `cwd`
+   in the hook payload, then the shell's own `$PWD`. Something always
+   resolves, so the guard never silently switches off. Set `WORKSPACE_ROOT`
+   only when the boundary should be wider than the project directory, such
+   as a workspace folder holding several repos.
+   Note the consequence: on a machine where `WORKSPACE_ROOT` does not exist
+   (a Linux container, a colleague's checkout, CI) the boundary tightens to
+   the project directory. Paths the harness provides outside the repo, such
+   as a session scratchpad under `/tmp`, are blocked there. Write inside the
+   repo instead, or widen `WORKSPACE_ROOT` for that host.
 5. Requires `jq` on PATH. If it's not installed: `winget install jqlang.jq`
    on Windows, or ask Claude to install it.
 6. Restart the session (or run `/hooks` inside Claude Code) to confirm both
@@ -30,6 +42,19 @@
   Bash one-liner could reference the file indirectly (e.g. through a
   variable built at runtime). Don't treat this as airtight secret
   isolation — it raises the bar, it doesn't guarantee it.
+- The guard reads its own tripwires out of the raw command string, so any
+  Bash command that so much as mentions the secrets dotfile, or contains the
+  literal text of the rule 3 delete pattern, is blocked. That includes
+  commands that would edit the guard or these notes. It is the rule working
+  as written rather than a bug, but it means editing those lines through a
+  shell needs the literal assembled at run time. The self-test in
+  `enforcement/tests/test-workspace-guard.sh` does exactly that.
+- Path comparison is textual, not canonical. The guard folds Windows and
+  Git Bash spellings together, collapses `.` and `..` segments, and requires
+  a real path separator at the boundary, so neither `workspace-other` nor
+  `workspace/../../etc` passes as a child of `workspace`. It does not
+  resolve symlinks, so a link inside the workspace pointing out of it is
+  still not caught. Same caveat as above: strong deterrent, not a proof.
 - Hooks run synchronously and block the tool call while they execute. Both
   scripts here are simple and fast; if you extend them, keep them under a
   second or two or Claude Code will feel sluggish.
