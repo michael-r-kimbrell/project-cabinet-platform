@@ -1,0 +1,14 @@
+{
+  "name": "mermaid-check",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Verifies that every mermaid fence in the repo's docs actually renders.",
+  "scripts": {
+    "check": "node check-mermaid.mjs"
+  },
+  "dependencies": {
+    "jsdom": "^26.0.0",
+    "mermaid": "^11.4.0"
+  }
+}
