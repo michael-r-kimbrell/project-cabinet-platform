@@ -1,8 +1,5 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
-  "env": {
-    "WORKSPACE_ROOT": "C:\\Users\\mkrod\\OneDrive\\Desktop\\Michael's Files\\Professional_Work\\Claude - AI\\Workspace"
-  },
   "hooks": {
     "SessionStart": [
       {

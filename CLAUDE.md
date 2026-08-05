@@ -45,6 +45,6 @@ line is just so you don't have to discover that the hard way.
 
 Cabinet platform: customer enters kitchen dimensions, style, and budget →
 system generates a design for approval → order routes to a producer and a
-local distributor. Domain expert is the operator (Michael), not the agent —
+local distributor. Domain expert is the operator, not the agent —
 when in doubt about cabinet terminology, supplier behavior, or workflow, ask
 rather than assume.
