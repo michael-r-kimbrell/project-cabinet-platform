@@ -6,7 +6,9 @@ See `doctrine/CONTEXT-TIERS.md` for why.
 
 ## Workspace boundary
 
-Your world is `C:\Users\<you>\workspace`. Work only inside it. Never touch
+Your world is `C:\Users\<you>\workspace` on the operator's machine, or the
+project directory when the session runs somewhere that path does not exist
+(a container, CI). Work only inside it. Never touch
 Documents, email, or anything outside that folder. This is mechanically
 enforced by `runtime/claude-code/hooks/workspace-guard.sh` (see
 `runtime/claude-code/settings.json`) — the hook is the real boundary, this
