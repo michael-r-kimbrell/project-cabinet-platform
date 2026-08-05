@@ -1,10 +1,13 @@
 # Project Renovation Timeline
 
-Target: mid-to-late September 2026. Schedule origin: 2026-08-05.
+Schedule origin: 2026-08-05. **Computed move-in: 2026-10-02.**
 
-Durations below are the operator's numbers and were not changed. What changed
-is sequencing, supplier lead times, and the move-in gate. See
-[What was wrong with the first pass](#what-was-wrong-with-the-first-pass).
+The original target was mid-to-late September. This no longer reaches it, and
+the reason is structural rather than a matter of working faster. See
+[Why September slipped](#why-september-slipped).
+
+Durations are the operator's numbers and were not changed. Sequencing,
+supplier lead times, and the move-in gate were.
 
 ## Timeline
 
@@ -16,25 +19,25 @@ gantt
     todayMarker on
 
     section Orders (this week)
-    Order cabinet doors/drawer fronts (long pole)   :crit, order1, 2026-08-05, 3d
     Order in-stock stove/oven combo                 :order2, 2026-08-05, 2d
     Order Mr. Cool unit                             :order3, 2026-08-05, 2d
-    Order laminate countertop, sink, faucet         :order4, 2026-08-05, 3d
     Schedule sub for downstairs bath                :order5, 2026-08-05, 2d
     Confirm painter schedule                        :order6, 2026-08-05, 2d
+
+    section Kitchen prep (gates the door order)
+    Finish demo of the stove/pantry wall            :crit, k1, after order5, 3d
+    Frame new cabinets, hold 30-inch stove opening  :crit, k2, after k1, 4d
+    Measure and order doors/drawer fronts           :crit, order1, after k2, 3d
+    Measure and order countertop, sink, faucet      :order4, after k2, 3d
+    Surface prep (self-level, sand/putty)           :k3, after k2, 4d
+    Painter - face frames, window, trim, fireplace  :k4, after k3, 5d
+    Mr. Cool install                                :k11, after k2 lead3, 2d
 
     section Supplier lead times (CONFIRM)
     Doors/fronts in production and transit          :crit, lead1, after order1, 28d
     Countertop fabrication and pickup               :lead4, after order4, 10d
     Stove/oven delivery                             :lead2, after order2, 7d
     Mr. Cool delivery                               :lead3, after order3, 7d
-
-    section Kitchen prep (during lead time)
-    Finish demo (trim, ceiling panels)              :k1, after order5, 3d
-    Structural rough-in (stove space, pantry conv.) :k2, after k1, 4d
-    Surface prep (self-level, sand/putty)           :k3, after k2, 4d
-    Painter - face frames, window, trim, fireplace  :k4, after k3, 5d
-    Mr. Cool install                                :k11, after k2 lead3, 2d
 
     section Kitchen install (gated on doors)
     Cabinet doors install                           :crit, k5, after lead1 k4, 3d
@@ -68,45 +71,100 @@ gantt
     Move family back in                             :milestone, movein, after k13 u5 h3 d3, 0d
 ```
 
-**Computed move-in: 2026-09-23.** Dates below are mermaid's own computed
-values, read out of the parsed chart, not estimated by hand. Calendar days,
-no weekend exclusion.
+Dates below are mermaid's own computed values, read out of the parsed chart,
+not estimated by hand. Calendar days, no weekend exclusion.
+
+## Why September slipped
+
+The cabinet doors cannot be ordered until the stove and pantry wall is
+demolished and the new cabinets are framed to hold a 30-inch opening for the
+stove/oven combo. The doors have to be measured against the face frames that
+framing produces, so the order cannot go in on day one.
+
+That pushes the single longest item in the build, the door lead time, twelve
+days later than the previous version assumed:
+
+| | Previous version | With the order gated on framing |
+| --- | --- | --- |
+| Door order placed | 2026-08-08 | 2026-08-17 |
+| Doors arrive (4-week assumption) | 2026-09-05 | 2026-09-14 |
+| Move-in | 2026-09-23 | **2026-10-02** |
+
+Nothing was made slower. The work simply cannot start where it was drawn as
+starting.
 
 ## The one number that decides the date
 
-Everything hinges on cabinet door lead time. The 28-day (4-week) figure in
-the chart is an **assumption, not a quote**. Confirm it with the supplier
-before treating any of this as a plan. The slip is 1:1 - every day of door
-lead time is a day of move-in.
+Cabinet door lead time. The 28-day (4-week) figure is an **assumption, not a
+quote**. The slip is 1:1: every day of lead time is a day of move-in.
 
-| Door lead time | Doors arrive | Move-in |
-| --- | --- | --- |
-| 2 weeks | 2026-08-22 | 2026-09-10 |
-| 3 weeks | 2026-08-29 | 2026-09-16 |
-| **4 weeks (assumed)** | **2026-09-05** | **2026-09-23** |
-| 5 weeks | 2026-09-12 | 2026-09-30 |
-| 6 weeks | 2026-09-19 | 2026-10-07 |
-| 8 weeks | 2026-10-03 | 2026-10-21 |
-| 10 weeks | 2026-10-17 | 2026-11-04 |
+| Door lead time | Doors arrive | Move-in | September? |
+| --- | --- | --- | --- |
+| 2 weeks | 2026-08-31 | 2026-09-18 | makes it |
+| 3 weeks | 2026-09-07 | 2026-09-25 | makes it |
+| **4 weeks (assumed)** | **2026-09-14** | **2026-10-02** | **misses by 2 days** |
+| 5 weeks | 2026-09-21 | 2026-10-09 | misses |
+| 6 weeks | 2026-09-28 | 2026-10-16 | misses |
+| 8 weeks | 2026-10-12 | 2026-10-30 | misses |
+| 10 weeks | 2026-10-26 | 2026-11-13 | misses |
 
-Anything past a 5-week door lead time misses September. The other three lead
-times (countertop 10d, stove 7d, Mr. Cool 7d) have slack and are not on the
-critical path; they are placeholders too, but getting them wrong costs
-nothing until they exceed roughly four weeks.
+**September now needs a 3-week door lead time or better.** In the previous
+version the cutoff was 5 weeks. Gating the order on framing consumed two weeks
+of that margin.
+
+## What would pull it back
+
+Two levers, and only two, because the critical path runs through a single
+chain. Both move the date 1:1.
+
+1. **Get to the door order sooner.** Twelve days currently separate today from
+   the order going in: 2 days to schedule the sub, 3 to demo, 4 to frame, 3 to
+   measure and order. Any day saved anywhere in that run is a day off move-in.
+   The measure-and-order step at 3 days is the softest of them; if the supplier
+   can take the order the day framing finishes, that alone is 2 days.
+2. **Shorten the door lead time.** Ask what a rush costs, and ask whether a
+   partial shipment of the door fronts alone, ahead of the drawer fronts, would
+   let the install start earlier.
+
+The 3-day punch list and buffer before move-in is the only slack deliberately
+built in. Cutting it buys 3 days and gives up the cushion.
 
 ## Critical path
 
-order1 -> lead1 (doors) -> k5 install -> k6 drawers -> k7 countertop ->
-k9 flooring -> k10 trim -> k12 lighting -> k13 punch list -> move-in.
+schedule sub -> demo -> frame the 30-inch opening -> measure and order doors ->
+**doors in production** -> doors install -> build drawers -> countertop ->
+flooring -> trim -> lighting -> punch list -> move in.
 
-Nothing else comes close. Both upstairs bathrooms finish 2026-08-17, the hall
-and bedrooms 2026-08-18, and the downstairs bathroom 2026-08-23 - all more
-than a month of float. If effort is short, it belongs on the kitchen.
+Everything else has more than a month of float. Both upstairs bathrooms finish
+2026-08-17, the hall and bedrooms 2026-08-18, the downstairs bathroom
+2026-08-23. If labor is short in September it belongs in the kitchen; if it is
+short in August, the kitchen prep run is the only thing that matters, because
+that is what gates the order.
+
+## Open questions for the operator
+
+- **What is the real quoted lead time on the doors and drawer fronts?**
+  September survives at 3 weeks and dies at 4. Nothing else on this page is
+  worth acting on until that is a number from a supplier.
+- **Get the stove's actual dimensions before framing, not the unit itself.**
+  Framing runs 2026-08-10 to 08-14 and the stove is not scheduled to arrive
+  until 08-14. Framing a 30-inch opening against a spec sheet is fine; framing
+  it against an assumption is how a range ends up not fitting. The spec sheet
+  is available the day it is ordered.
+- **Can the countertop be templated off the new face frames as soon as they are
+  framed?** The chart assumes the countertop order also waits for framing, which
+  costs nothing here because it carries over three weeks of slack. If it turns
+  out it could have been ordered earlier, the date does not change.
+- **Does the countertop fabricator need the cabinets fully set before
+  templating?** The chart assumes yes, so the install waits on the drawers.
+- **Calendar days are used throughout, weekends included.** If the sub and the
+  painter work weekdays only, add `excludes weekends` and every date stretches
+  by roughly 40 percent, which would put move-in in November.
 
 ## What was wrong with the first pass
 
 The original chart did not render at all, and its move-in milestone landed
-2026-08-18, about five weeks earlier than its own stated target.
+2026-08-18, weeks earlier than its own stated target.
 
 **Syntax (chart would not display):**
 
@@ -120,30 +178,13 @@ The original chart did not render at all, and its move-in milestone landed
 
 3. **No lead times existed.** Every install was wired `after <order task>`,
    meaning it started the day the order was *placed*. Doors were labeled the
-   long pole but modeled as a 14-day bar starting 2026-08-08. That single
-   modeling choice is what collapsed the whole schedule into August.
+   long pole but modeled as a 14-day bar starting 2026-08-08.
 4. **Installs preceded their prerequisites.** Countertop install ran
-   2026-08-08 to 08-11, before demo finished (08-10), before surface prep,
-   and before any cabinet doors existed. Stove install finished 08-09, five
-   days before the stove space rough-in was done. Flooring finished 08-14,
-   nine days before the painter left.
+   2026-08-08 to 08-11, before demo finished, before surface prep, and before
+   any cabinet doors existed. Stove install finished 08-09, five days before
+   the stove space rough-in was done.
 5. **The move-in milestone was gated on one task.** It fired `after k12`
-   (kitchen lighting) only, so it triggered 2026-08-18 while six tasks were
-   still open, including kitchen drawers (to 08-24) and the downstairs
-   bathroom shower door (to 08-23). It now waits on all four work streams.
-
-**Added:** a 3-day punch list and buffer before move-in. Adjust or delete if
-you would rather carry the risk.
-
-## Open questions for the operator
-
-- Actual quoted lead time on the doors and drawer fronts. Everything else is
-  noise until this is a real number.
-- Does the countertop need the cabinets in place for templating? The chart
-  assumes yes (k7 waits on k6), which costs about three days. If the fabricator
-  templates off the existing face frames, that can start earlier.
-- Flooring is scheduled after the countertop and before the stove, so the
-  range sits on finished floor. Confirm that matches how you want it done.
-- Calendar days are used throughout, weekends included. If the sub and painter
-  work weekdays only, add `excludes weekends` to the chart and the dates will
-  stretch by roughly 40 percent.
+   (kitchen lighting) only, triggering while six tasks were still open.
+6. **The door order was drawn as the first task of the build.** It cannot be:
+   the doors are measured against face frames that do not exist until demo and
+   framing are complete. This is what moved the date out of September.

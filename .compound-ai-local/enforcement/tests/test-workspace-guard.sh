@@ -78,8 +78,8 @@ unset WORKSPACE_ROOT
 echo
 
 # ---------------------------------------------------------------- Windows
-WIN_ROOT_NATIVE="C:\\Users\\testuser\\Desktop\\Michael's Files\\Claude - AI\\Workspace"
-WIN_ROOT_MOUNT="${SL}c${SL}Users${SL}testuser${SL}Desktop${SL}Michael's Files${SL}Claude - AI${SL}Workspace"
+WIN_ROOT_NATIVE="C:\\Users\\testuser\\Desktop\\Agent Files\\Claude - AI\\Workspace"
+WIN_ROOT_MOUNT="${SL}c${SL}Users${SL}testuser${SL}Desktop${SL}Agent Files${SL}Claude - AI${SL}Workspace"
 WIN_CLEANUP="${SL}c${SL}Users${SL}testuser"
 WIN_AVAILABLE=0
 # Only simulate the C: drive on a host that does not have one. On real
@@ -103,9 +103,9 @@ if [[ $WIN_AVAILABLE -eq 1 ]]; then
   run allow "Git Bash mount form inside the workspace" \
     Write "$WIN_ROOT_MOUNT/project-cabinet-platform/notes.md" ""
   run allow "forward-slash drive form inside the workspace" \
-    Write "C:/Users/testuser/Desktop/Michael's Files/Claude - AI/Workspace/notes.md" ""
+    Write "C:/Users/testuser/Desktop/Agent Files/Claude - AI/Workspace/notes.md" ""
   run allow "drive letter and user case differ from the root" \
-    Write "c:\\users\\TESTUSER\\Desktop\\Michael's Files\\Claude - AI\\Workspace\\notes.md" ""
+    Write "c:\\users\\TESTUSER\\Desktop\\Agent Files\\Claude - AI\\Workspace\\notes.md" ""
   run block "Documents is outside the workspace" \
     Read "C:\\Users\\testuser\\Documents\\taxes.xlsx" ""
   run block "sibling directory sharing the root's prefix" \

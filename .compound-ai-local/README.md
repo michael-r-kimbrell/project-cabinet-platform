@@ -1,6 +1,6 @@
 # cabinet-ops
 
-A compounding operating kit for Michael's AI-agent workflow, adapted from
+A compounding operating kit for the operator's AI-agent workflow, adapted from
 Cameron Sutcliff and Joshua Sutcliff's [Compound AI](https://github.com/cameronpsutcliff/compound-ai)
 operating standard (source read and summarized before anything here was
 written — see the getting-started guide, step 3, for why that order
