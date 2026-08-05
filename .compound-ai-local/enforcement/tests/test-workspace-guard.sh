@@ -46,12 +46,52 @@ run() {
   fi
 }
 
+# ------------------------------------------------------------ native host
+# Whatever machine this is, the checkout is a real directory, so point the
+# guard at it and confirm the boundary holds in the host's own path syntax.
+# On Windows this is the case that matters: Git Bash reports $PWD as
+# /d/a/repo while the tools hand the hook D:\a\repo, and the guard has to
+# see those as one place.
+echo "Native host ($(uname -s 2>/dev/null || echo unknown))"
+NATIVE_ROOT="$(pwd)"
+export WORKSPACE_ROOT="$NATIVE_ROOT"
+unset CLAUDE_PROJECT_DIR
+
+run allow "checkout path in the shell's own syntax" \
+  Read "$NATIVE_ROOT/README.md" ""
+run block "the checkout's parent" \
+  Read "$NATIVE_ROOT/${SL}..${SL}outside.txt" ""
+
+# If pwd came back as a Git Bash mount (/d/...), rebuild the native D:\...
+# spelling and check the guard agrees the two name the same directory.
+if [[ "$NATIVE_ROOT" =~ ^/([A-Za-z])/(.*)$ ]]; then
+  NATIVE_DRIVE="$(printf '%s' "${BASH_REMATCH[1]}" | tr '[:lower:]' '[:upper:]')"
+  NATIVE_REST="$(printf '%s' "${BASH_REMATCH[2]}" | tr '/' '\\')"
+  run allow "same checkout spelled as a native drive path" \
+    Read "${NATIVE_DRIVE}:\\${NATIVE_REST}\\README.md" ""
+  run block "native drive path outside the checkout" \
+    Read "${NATIVE_DRIVE}:\\Windows\\System32\\config\\SAM" ""
+else
+  echo "  skip  native drive-path cases (not a Git Bash mount)"
+fi
+unset WORKSPACE_ROOT
+echo
+
 # ---------------------------------------------------------------- Windows
 WIN_ROOT_NATIVE="C:\\Users\\testuser\\Desktop\\Michael's Files\\Claude - AI\\Workspace"
 WIN_ROOT_MOUNT="${SL}c${SL}Users${SL}testuser${SL}Desktop${SL}Michael's Files${SL}Claude - AI${SL}Workspace"
 WIN_CLEANUP="${SL}c${SL}Users${SL}testuser"
 WIN_AVAILABLE=0
-mkdir -p "$WIN_ROOT_MOUNT/project-cabinet-platform" 2>/dev/null && WIN_AVAILABLE=1
+# Only simulate the C: drive on a host that does not have one. On real
+# Windows this block would create and then delete a directory under the
+# actual C:\Users, and the native-host cases above already cover the real
+# thing, so there is nothing to gain and a live tree to damage.
+case "$(uname -s 2>/dev/null || echo unknown)" in
+  MINGW*|MSYS*|CYGWIN*|Windows*)
+    echo "Windows-style root: SKIPPED (running on a real Windows host)" ;;
+  *)
+    mkdir -p "$WIN_ROOT_MOUNT/project-cabinet-platform" 2>/dev/null && WIN_AVAILABLE=1 ;;
+esac
 
 if [[ $WIN_AVAILABLE -eq 1 ]]; then
   echo "Windows-style root (WORKSPACE_ROOT set to a native C: path)"
@@ -77,8 +117,9 @@ if [[ $WIN_AVAILABLE -eq 1 ]]; then
   run allow "backslash dot-dot that stays inside the workspace" \
     Write "$WIN_ROOT_NATIVE\\project-cabinet-platform\\..\\notes.md" ""
   unset WORKSPACE_ROOT
-else
-  echo "Windows-style root: SKIPPED (cannot create $WIN_ROOT_MOUNT)"
+elif [[ "$(uname -s 2>/dev/null || echo unknown)" != MINGW* ]]; then
+  echo "Windows-style root: SKIPPED (cannot create $WIN_ROOT_MOUNT;"
+  echo "  on a Linux CI runner: sudo mkdir -p /c && sudo chown \"\$(id -u)\" /c)"
 fi
 
 # ------------------------------------------------------------------ Linux
