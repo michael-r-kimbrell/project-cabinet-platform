@@ -28,6 +28,16 @@
     ],
     "PreToolUse": [
       {
+        "matcher": "mcp__github__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .compound-ai-local/runtime/claude-code/hooks/context-guard.sh",
+            "timeout": 10
+          }
+        ]
+      },
+      {
         "matcher": "Bash|Edit|Write|Read",
         "hooks": [
           {

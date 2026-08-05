@@ -33,6 +33,21 @@ line is just so you don't have to discover that the hard way.
    `.env` (gitignored), never pasted into a prompt. A hook blocks reading
    `.env` back out to you — see `runtime/claude-code/hooks/workspace-guard.sh`.
 
+## Token discipline (Tier 0 - always active)
+
+Context cost compounds: every turn re-sends the whole conversation, so one
+bloated tool result is paid on every later turn, not once. The session-router
+prints a routing tier on every prompt. Honor it.
+
+6. **Keep tool results small.** Paginate list calls (5-10 items) and set
+   `minimal_output` where the tool offers it. Pipe noisy shell output through
+   `tail`/`head`/`grep` rather than dumping it. Enforced for the worst
+   offenders by `runtime/claude-code/hooks/context-guard.sh`.
+7. **Patch, do not rewrite.** Edit the lines that changed. Regenerating a whole
+   file or page costs its full length in output tokens and again in context.
+8. **One task, one session.** Finish, then clear. Unrelated earlier work left
+   in context is re-sent on every subsequent turn at full price.
+
 ## Where to look next (Tier 1 — load on demand)
 
 - Planning a new feature → `doctrine/GOAL-LOOP.md`
