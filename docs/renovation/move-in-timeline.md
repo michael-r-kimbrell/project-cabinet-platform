@@ -87,14 +87,15 @@ characters:
 | Phase | Length | Whose time | Compressible? |
 | --- | --- | --- | --- |
 | Doors in transit from supplier | ~2 weeks | theirs | only by paying for a rush |
-| Sand, paint, drill hinge holes | 1 to 2 weeks | **yours** | **yes** |
+| Sand and paint | 1 to 2 weeks | **yours** | depends, see below |
 
-The supplier half is fixed. The finishing half is labor, and labor is the part
-you control. That is where the date actually lives:
+The supplier half is fixed. The finishing half is the only part on your side of
+the line, so that is where the date actually lives, whether or not it turns out
+to be compressible:
 
 | Transit | Your finishing | Doors ready to hang | Move-in | September? |
 | --- | --- | --- | --- | --- |
-| 2 weeks | 3 days | 2026-09-03 | 2026-09-21 | yes, with 9 days to spare |
+| 2 weeks | 3 days (factory-finished) | 2026-09-03 | 2026-09-21 | yes, with 9 days to spare |
 | 2 weeks | 1 week | 2026-09-07 | 2026-09-25 | yes |
 | 2 weeks | 10 days | 2026-09-10 | 2026-09-28 | yes, barely |
 | 2 weeks | **2 weeks** | 2026-09-14 | **2026-10-02** | **no, by 2 days** |
@@ -104,21 +105,40 @@ you control. That is where the date actually lives:
 Your own range, one to two weeks, straddles the line exactly. One week and
 September holds with a week to spare. Two weeks and it misses by two days.
 
-## The highest-leverage question to ask the supplier
+## What the finishing window is actually made of
 
-**Can they bore the hinge holes and factory-finish the doors?**
+Hinge boring is not part of it. The operator puts the whole boring job at 15 to
+20 minutes, so paying a supplier upcharge to have it done buys back essentially
+nothing. Ruled out.
 
-Most door suppliers will do both for an upcharge, and it is the single change
-that moves this schedule most. Boring hinge holes and painting are the bulk of
-the one-to-two weeks. If the doors arrive bored and finished, that phase
-collapses to a few days of touch-up and hanging hardware:
+That leaves sanding and painting, and the important question is what kind of
+time those are:
 
-- Doors ready to hang 2026-09-03 instead of 09-14
-- **Move-in 2026-09-21**, nine days inside the target
+- **Active work** (sanding, masking, laying down coats) shrinks with more hands
+  or longer days.
+- **Cure time between coats** does not. It is elapsed time, and a second person
+  cannot make paint dry faster.
 
-It also removes the risk of a two-week task run by one person becoming a
-three-week task, which is the most likely way this schedule slips further.
-Worth asking what it costs before assuming it is not worth it.
+The split between the two decides which levers exist at all. If the one-to-two
+weeks is mostly cure time, then help does nothing and the only real options are
+fewer coats, a faster-curing product, or having the doors arrive finished. If
+it is mostly active work, then help or longer days move the date directly.
+
+**This is the open question that matters most now.** Everything below is
+conditional on the answer.
+
+### Factory-finished doors, with a caveat
+
+Still worth pricing, but not for the reason given before. If the doors arrive
+already finished, the whole one-to-two week phase collapses to touch-up and
+hanging hardware, and move-in lands 2026-09-21.
+
+The caveat: finishing happens inside the supplier's production window, so a
+factory-finished order may ship later than an unfinished one. That could cancel
+out the gain. The question to ask is not just what finishing costs, but **what
+the lead time is for finished versus unfinished.** If finished doors take a week
+longer to ship but save two weeks of shop time, it is still a win; if they take
+three weeks longer, it is not.
 
 ## The second lever, and why it is smaller
 
@@ -138,8 +158,11 @@ The doors do not land until 08-31.
 
 So nothing competes with the door finishing. It gets your undivided attention
 for as long as it takes, which makes the one-week end of your estimate
-realistic rather than optimistic, and means bringing in a second pair of hands
-would translate directly into days saved.
+realistic rather than optimistic.
+
+Whether a second pair of hands would help is a different question, and it
+depends on the active-work versus cure-time split above. If the window is
+mostly waiting for coats to dry, extra labor buys nothing.
 
 ## Critical path
 
@@ -153,8 +176,12 @@ paying someone.
 
 ## Open questions for the operator
 
-- **Can the supplier bore hinge holes and factory-finish?** The biggest single
-  question on the schedule. See above.
+- **How much of the finishing window is active work versus waiting for coats to
+  cure?** The biggest single question on the schedule, because it decides
+  whether any lever exists. See above.
+- **What is the supplier's lead time for factory-finished doors versus
+  unfinished?** Worth pricing only if the extra production time is shorter than
+  the shop time it saves. Hinge boring is ruled out: 15 to 20 minutes total.
 - **Get the stove's actual dimensions before framing, not the unit itself.**
   Framing runs 2026-08-10 to 08-14 and the stove is not due until 08-14.
   Framing a 30-inch opening against a spec sheet is fine; framing it against an
